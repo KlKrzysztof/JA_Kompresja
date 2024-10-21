@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "JA_Kompresja": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
