@@ -8,11 +8,14 @@
 //
 //Class which is application's controler from MVC pattern
 
+using System.Reflection;
+
 namespace JA_Kompresja
 {
     internal static class Controler
     {
         private static appView view;
+        private static Model model;
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
@@ -25,6 +28,21 @@ namespace JA_Kompresja
             ApplicationConfiguration.Initialize();
             view = new appView();
             Application.Run(view);
+
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+        }
+
+        private static System.Reflection.Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+        {
+            string path = @".\Ja_Kompresja.dll";
+            if (File.Exists(path))
+            {
+                return Assembly.LoadFrom(path);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         //loadStatistics
@@ -151,7 +169,19 @@ namespace JA_Kompresja
 
         public static void Compress(string path, string threadsString, bool cppCheck, bool asmCheck)
         {
+            var compressParams = (path, threadsString, cppCheck, asmCheck);
+            if (asmCheck)
+            {
+                model = new ModelAsm();
 
+                model.Compress(compressParams);
+            }
+            else if(cppCheck)
+            {
+                model = new ModelCpp();
+
+                model.Compress(compressParams);
+            }
         }
     }
 }

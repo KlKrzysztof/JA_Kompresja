@@ -1,0 +1,2 @@
+LIBRARY Huffman_asem
+EXPORTS doSth
