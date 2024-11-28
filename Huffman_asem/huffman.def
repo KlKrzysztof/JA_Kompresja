@@ -1,2 +1,4 @@
 LIBRARY Huffman_asem
-EXPORTS doSth
+EXPORTS countBytes
+EXPORTS makeSortedArray
+EXPORTS makeHuffmanCodeTree

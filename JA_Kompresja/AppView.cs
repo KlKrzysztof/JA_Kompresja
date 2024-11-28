@@ -53,24 +53,34 @@ namespace JA_Kompresja
         //return value: void
         private void openExplorerButton_Click(object sender, EventArgs e)
         {
+            string filePath = "";
             //open file dialog
             var dialog = new OpenFileDialog()
             {
                 InitialDirectory = @"C:\Users", //start in User directory
                 Filter = "All Files (*.*) | *.*", //search for all file
-                RestoreDirectory = false //restore file to previously chosed while closing
+                RestoreDirectory = false, //restore file to previously chosed while closing
+                Multiselect = true //can select multiple files
+
             };
 
-            //User didn't select a file so return a default value  
+            //User didn't select a file so return a default value 
             if (dialog.ShowDialog() != DialogResult.OK)
             {
-                this.filePathTextbox.Text = "";
+                filePath = "";
             }
-            //Return the file the user selected  
+            //Return the files the user selected  
             else
             {
-                this.filePathTextbox.Text = dialog.FileName;
+                foreach(var file in dialog.FileNames)
+                {
+                    filePath += file + ';'; //merge all files in one string separate by ';'
+                }
+
+                filePath = filePath.Remove(filePath.Length - 1);//remove last ';'
             }
+
+            this.filePathTextbox.Text = filePath;
         }
 
 
@@ -143,6 +153,11 @@ namespace JA_Kompresja
             bool cppCheck = cppCheckbox.Checked, asmCheck = asmCheckbox.Checked;
 
             Controler.Compress(path, threadsString, cppCheck, asmCheck);
+        }
+
+        private void filePathTextbox_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

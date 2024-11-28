@@ -167,10 +167,53 @@ namespace JA_Kompresja
             return outerContainer;
         }
 
-        public static void Compress(string path, string threadsString, bool cppCheck, bool asmCheck)
+        //Compres
+        //method which choose whitch dll library should operate and then call compresion
+        //
+        //enter param:
+        //path - string representing a path to file
+        //threadsString - string representing how many threads should compress files
+        //cppCheck, asmCheck - flags which tell which  library will compress files
+        //
+        //return value: void
+        public static void Compress(string paths, string threadsString, bool cppCheck, bool asmCheck)
         {
-            var compressParams = (path, threadsString, cppCheck, asmCheck);
-            if (asmCheck)
+            string[] pathsArray;//array of paths
+            int filesCounter = 1;// count size of the array to initialize
+            int startingPoint = 0;// starting point of new file path substr
+            int endPoint = -1; // end point of file path substr
+
+            foreach (char c in paths) { // count size of the array by counting ';'
+                if (c == ';')
+                {
+                    filesCounter++;
+                }
+            }
+
+            pathsArray = new string[filesCounter]; //initialize array
+
+            {//loop scope
+                int i = 0; //array iterator
+                do
+                {
+                    startingPoint = endPoint + 1; // set starting point
+                    endPoint = paths.IndexOf(';', startingPoint);//search for ';'
+                    if (endPoint != -1)
+                    {
+                        pathsArray[i] = paths.Substring(startingPoint, endPoint - startingPoint); //if found take substr at [i]
+                        ++i; //continue
+                    }
+                    else
+                    {
+                        pathsArray[i] = paths.Substring(startingPoint, paths.Length); //else take the rest of string at [filesCounter - 1]
+                    }
+                } while (endPoint != -1); // do while string end isn't reach
+
+            }
+
+            var compressParams = (pathsArray, threadsString); //create a tuple
+
+            if (asmCheck) // make right model and call compression
             {
                 model = new ModelAsm();
 

@@ -61,6 +61,7 @@
             filePathTextbox.Name = "filePathTextbox";
             filePathTextbox.Size = new Size(519, 23);
             filePathTextbox.TabIndex = 1;
+            filePathTextbox.TextChanged += filePathTextbox_TextChanged;
             // 
             // enterPathLabel
             // 
@@ -177,7 +178,7 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Name = "appView";
             Text = "Huffman Compresion";
-            TopMost = true;
+            TopMost = false;
             Load += appView_Load;
             tabControl.ResumeLayout(false);
             compresionTab.ResumeLayout(false);
