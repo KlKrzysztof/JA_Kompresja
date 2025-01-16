@@ -14,8 +14,8 @@ namespace JA_Kompresja
 {
     internal static class Controler
     {
-        private static appView view;
-        private static Model model;
+        private static appView? view;
+        private static Model? model;
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
@@ -28,22 +28,9 @@ namespace JA_Kompresja
             ApplicationConfiguration.Initialize();
             view = new appView();
             Application.Run(view);
-
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
 
-        private static System.Reflection.Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
-        {
-            string path = @".\Ja_Kompresja.dll";
-            if (File.Exists(path))
-            {
-                return Assembly.LoadFrom(path);
-            }
-            else
-            {
-                return null;
-            }
-        }
+        
 
         //loadStatistics
         //load times for StatisticsDisplay
