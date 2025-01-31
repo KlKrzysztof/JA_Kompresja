@@ -48,12 +48,12 @@ LOCAL pipeline
     pcmpeqw maskReg, xmm6               ;check whitch value is null
 pipeline:
     movq RBX, maskReg                      
-    psrldq maskReg, 16                  ;move register to next value
+    ;psrldq maskReg, 16                  ;move register to next value
     cmp EBX, 65535                      ;if loaded value is not null
     jne continuePipeline                ;then concat a bit to code
-    mov sourceReg, R9                   ;else move mask to RAX
-    sub sourceReg, deleteMask           ;and subtract 1 from mask for easy deleting less significant 1
-    and R9, sourceReg                   ;delete all unnecessary 1
+    ;mov sourceReg, R9                   ;else move mask to RAX
+    ;sub sourceReg, deleteMask           ;and subtract 1 from mask for easy deleting less significant 1
+    ;and R9, sourceReg                   ;delete all unnecessary 1
     jmp nextPipeline                    ;else code next byte
 
 continuePipeline:
@@ -62,30 +62,92 @@ continuePipeline:
     
     test testReg, testReg               ;if byte is zero 
     jz skipPipeline                     ;then skip to next pipeline
+    shl codeReg, 1
     inc codeReg                         ;else change LSB on 1 
-    ror codeReg, 1                      ;and move to MSB
-    jmp nextPipeline
+    ;ror codeReg, 1                      ;and move to MSB
+    
 ENDM
 
-reloadPipeline MACRO nullMask, addressSource, addressMem, registerBroker, registerPart, registerQuarter, nextChar
+reloadPipeline MACRO nullMask, addressSource, addressMem, registerBroker, registerPart, permMaskLeft, permMaskRig, nextChar, positionInPipelineMask, sourceW, bitCounter
 LOCAL nextByte
+LOCAL cheakByteAvailability
     movq RBX, nullMask                  ;move null character mask to mask register
-    test BX, BX                         ;if character is not null then set pointer on it for pipeline
-    jnz nextByte                         ;else load code of next byte for pipeline
+    test EBX, EBX                         ;if character is not null then set pointer on it for pipeline
+    jnz cheakByteAvailability                       ;else load code of next byte for pipeline
+    inc sourceW
+    mov bitCounter, sourceW
     psrldq nullMask, 16                 ;move register to next value
     mov addressSource, addressMem
     add addressSource, 2               ;set pointer to character                  //16 -> 2?
     jmp nextChar                        ;move to next pipeline
 
+cheakByteAvailability:;przed przypisaniem nastêpnego znaku sprawdziæ czy takowy istnieje do przypisania -> jeœli nie to koñczymy potok; R9 - maska dla potoków - 0 = koniec
+    inc sourceW
+    mov bitCounter, sourceW
+    mov addressSource, R9                   ;else move mask to RAX
+    sub addressSource, positionInPipelineMask           ;and subtract 1 from mask for easy deleting less significant 1
+    and R9, addressSource                   ;delete all unnecessary 1
+
+    ror R9, positionInPipelineMask/32
+    cmp R9b, 0
+    jne nextByte
+    mov addressSource, 0
+    rol R9, positionInPipelineMask/32
+    jmp nextChar
+
 nextByte:
-    vpsrlq ymm14, ymm14, registerQuarter
+    rol R9, positionInPipelineMask/32
+    vpermq ymm14, ymm14, permMaskLeft
     vpextrb addressSource, registerBroker, registerPart      ;get byte from file to pipeline 1
     ;bit shift a quarter of the register
     vpand ymm15, ymm0, ymm14
     vpsrlq ymm15, ymm15, 8
     vpandn ymm0, ymm14, ymm0
     vpor ymm0, ymm0, ymm15        
-    vpsllq ymm14, ymm14, registerQuarter
+    vpermq ymm14, ymm14, permMaskRig
+    mov addressSource, [RCX+addressSource*8]                        ;load pointer to next char
+ENDM
+
+mergeRegister MACRO mergingRegisterCounter, mergingRegister
+LOCAL mergeReg
+LOCAL regOverflow
+LOCAL dropReg
+    mergeReg:
+    ;check availability to merging registers
+    add RAX, mergingRegisterCounter
+    cmp RAX, 64
+    jg regOverflow                 ;if data is too big then merge only part of the register
+    shlx R10, R10, mergingRegisterCounter               ;else make free space
+    or R10, mergingRegister                     ;and merge registers
+    jmp mergePipeline2
+
+regOverflow:
+    ;calculate number of free space
+    sub RAX, mergingRegisterCounter
+    mov RBX, 64                 
+    sub RBX, RAX
+    ;shift registers to make free space
+    shlx R10, R10, RBX
+    ;make mask for merging registers
+    mov RAX, 1
+    shlx RAX, RAX, RBX
+    sub RAX, 1
+    ;get bits to merging
+    mov R9, mergingRegister
+    sarx R9, R9, RAX
+    ;merge registers
+    or R10, R9
+    xor RAX, RAX
+
+dropReg:
+    ;drop register to memory
+    rol R10, 8
+    mov [RSI], R10b
+    sub AX, 8
+    inc RSI
+    cmp AX, 0
+    jg dropReg
+    jmp mergeReg
 ENDM
 
 ;countBytes - count bytes from one array and fill second one with bytes counters
@@ -665,6 +727,11 @@ codeFile proc ;procedura do debugowania bo coœ nie dzia³a
     LOCAL pipelineAdress3: QWORD
     LOCAL pipelineAdress4: QWORD
     LOCAL loopCounter: DWORD
+    LOCAL bitCounterP1: WORD
+    LOCAL bitCounterP2: WORD
+    LOCAL bitCounterP3: WORD
+    LOCAL bitCounterP4: WORD
+    LOCAL loadedDataCounter: QWORD
               
 
     push RSP
@@ -684,6 +751,11 @@ codeFile proc ;procedura do debugowania bo coœ nie dzia³a
     mov stackPointer, RSP
 
     ;mov quarterBitShift, 9FFFFFFFh
+    mov bitCounterP1, 0
+    mov bitCounterP2, 0
+    mov bitCounterP3, 0
+    mov bitCounterP4, 0
+    mov loadedDataCounter, 0
     xor RAX, RAX
     mov loopCounter, EAX
     not RAX
@@ -700,6 +772,8 @@ codeFile proc ;procedura do debugowania bo coœ nie dzia³a
     xor R11, R11
     xor R12, R12
     xor R13, R13
+    xor R14, R14
+    xor R15, R15
     xor RBX, RBX
     pxor xmm6, xmm6
     ;pxor mm1, mm1
@@ -709,9 +783,9 @@ codeFile proc ;procedura do debugowania bo coœ nie dzia³a
     movd xmm7, zeroChars
 
 loadFrame:
-    add RDI, R9                         ;move file pointer to next frame
-    sub RDX, R9                         ;shorten length of the array by length of the frame
-    xor R9, R9                          ;reset iterator
+    add RDI, loadedDataCounter                         ;move file pointer to next frame
+    sub RDX, loadedDataCounter                         ;shorten length of the array by length of the frame
+    xor R9, R9                          ;reset data mask
     cmp RDX, R9                         ;if iterator != array length
     je endCoding                        ;then end procedure
     vmovdqu ymm0, ymmword ptr[RDI]      ;load file to register
@@ -719,33 +793,68 @@ loadFrame:
     ;creating mask for pipelines
     cmp RDX, 32                         ;compare if file length is greater than length of frame then set all 32 bit as 1
     jle lessMask                        ;else set n bits mask
-    sub R9D, 1                          ;all bits change on 1
+    sub R9, 1                          ;all bits change on 1
+    mov loadedDataCounter, 32
 lessMask:
     mov R9D, 1                          
     shlx R9D, R9D, EDX                        ;bit shift n times
     sub R9D, 1                          ;subtract 1 so lesser bits change on 1
+    mov loadedDataCounter, RDX
     
 nextByte:    
     vpextrb RAX, xmm0, 0                ;get byte from file to pipeline 1
+    
+    mov RAX, [RCX+RAX*8]     
+
+    ror R9, 8
+    cmp R9b, 0
+    jne setP2  
+    rol R9, 8
+    jmp shiftReg
+
+setP2:
     vpextrb R8, xmm0, 8                 ;get byte from file to pipeline 2
+    
+    mov R8, [RCX+R8*8]       
+
+    ror R9, 8
+    cmp R9b, 0
+    jne setP3
+    rol R9, 16
+    jmp shiftReg
+
+setP3:
     vpextrb R14, xmm12, 0               ;get byte from file to pipeline 3
+
+    mov R14, [RCX+R14*8]       
+
+    ror R9, 8
+    cmp R9b, 0
+    jne setP4
+    rol R9, 24
+    jmp shiftReg
+
+setP4:
     vpextrb R15, xmm12, 8               ;get byte from file to pipeline 4
+    mov R15, [RCX+R15*8]       
+
+shiftReg:
     vpsrlq ymm0, ymm0, 8                ;bit shift register to get next byte
     vpsrlq ymm12, ymm12, 8              ;bit shift register to get next byte
-    ;load pointers to code to the register
-    mov RAX, [RCX+RAX*8]                
-    mov R8, [RCX+R8*8]
-    mov R14, [RCX+R14*8]
-    mov R15, [RCX+R15*8]
 loadCode:
     ;load value of code to pipelines
-    movd xmm2, dword ptr [RAX]                      
+    test RAX, RAX
+    jz prepP2
+    movd xmm2, dword ptr [RAX]     
+prepP2:
     test R8, R8
-    jz startPipeline
+    jz prepP3
     movd xmm3, dword ptr [R8]
+prepP3:
     test R14, R14
-    jz startPipeline
-    movd xmm4, dword ptr [R14]
+    jz prepP4
+;    movd xmm4, dword ptr [R14]                                                             ########################################
+prepP4:
     test R15, R15
     jz startPipeline
     movd xmm5, dword ptr [R15]
@@ -754,39 +863,49 @@ loadCode:
 
 startPipeline:
     codeCreatorPipeline RAX, AL, R10, xmm8, xmm2, startPipelineTwo, skipToPipelineTwo, pipelineAdress1, 1
+    mov AX, bitCounterP1               ;load number of already writed bits of code
+    jmp startPipelineTwo
 
 skipToPipelineTwo:
-    sar R10, 1   
+    shl R10, 1   
+    mov AX, bitCounterP1               ;load number of already writed bits of code
 startPipelineTwo:
     test R8, R8
-    jz ReloadPipelines
+    jz startPipelineThree
     codeCreatorPipeline R8, R8b, R11, xmm9, xmm3, startPipelineThree, skipToPipelineThree, pipelineAdress2, 256
+    mov R8w, bitCounterP2               ;load number of already writed bits of code
+    jmp startPipelineThree
 
 skipToPipelineThree:
-    sar R11, 1
-startPipelineThree:
+    shl R11, 1
+     mov R8w, bitCounterP2               ;load number of already writed bits of code
+startPipelineThree:    
     test R14, R14
-    jz ReloadPipelines
+    jz startPipelineFour
     codeCreatorPipeline R14, R14b, R12, xmm10, xmm4, startPipelineFour, skipToPipelineFour, pipelineAdress3, 512
+    mov R14w, bitCounterP3               ;load number of already writed bits of code
+    jmp startPipelineFour
     
 skipToPipelineFour:
-    sar R12, 1
+    shl R12, 1
+    mov R14w, bitCounterP3               ;load number of already writed bits of code
 startPipelineFour:
+    mov R14w, bitCounterP3               ;load number of already writed bits of code
     test R15, R15
     jz ReloadPipelines
-    codeCreatorPipeline R15, R15b, R13, xmm11, xmm5, ReloadPipelines, ReloadPipelines, pipelineAdress4, 1024
+    codeCreatorPipeline R15, R15b, R13, xmm11, xmm5, ReloadPipelines, loadBitCounter, pipelineAdress4, 1024
     
 ;Decisive block for pipelines wether to 
 ;   still code or load next charcter
 ;---------------------------------------;
+loadBitCounter:
+    mov R15w, bitCounterP4               ;load number of already writed bits of code
 ReloadPipelines:
-;to na koniec
-    
 
     ;czy opró¿niæ rejestry kodu -> zmieszaæ wskaŸnik i maskê i czy równa siê zero?
-    mov EAX, loopCounter
-    inc EAX
-    mov loopCounter, EAX
+    mov EBX, loopCounter
+    inc EBX
+    mov loopCounter, EBX
     cmp loopCounter, 64                 ;if register is full then drop them to memory
     jne stopRegisterDrop                ;else load next characters
     movq xmm1, R10
@@ -828,42 +947,157 @@ drop1:
 
     ;czy wczytaæ kolejny znak kodu
 stopRegisterDrop:
-;    reloadPipeline xmm8, RAX, pipelineAdress1, xmm0, 0, 0, setPipeline2
+;    reloadPipeline xmm8, RAX, pipelineAdress1, xmm0, 0, 0, setPipeline2, 0, AX, bitCounterP1
     ;przetworzyæ to na makro
+    test RAX, RAX
+    jz setPipeline2
     movq RBX, xmm8                      ;move null character mask to mask register
-    test BX, BX                         ;if character is not null then set pointer on it for pipeline
-    jnz nextByteP1                       ;else load code of next byte for pipeline
+    test EBX, EBX                         ;if character is not null then set pointer on it for pipeline
+    jnz cheakByteAvailabilityP1                       ;else load code of next byte for pipeline
+    inc AX
+    mov bitCounterP1, AX
     psrldq xmm8, 16                     ;move register to next value
     mov RAX, pipelineAdress1
     add RAX, 2                         ;set pointer to character
     jmp setPipeline2                      ;move to next pipeline
 
+cheakByteAvailabilityP1:;przed przypisaniem nastêpnego znaku sprawdziæ czy takowy istnieje do przypisania -> jeœli nie to koñczymy potok; R9 - maska dla potoków - 0 = koniec
+    inc AX
+    mov bitCounterP1, AX
+    mov RAX, R9                   ;else move mask to RAX
+    sub RAX, 1           ;and subtract 1 from mask for easy deleting less significant 1
+    and R9, RAX                   ;delete all unnecessary 1
+
+    cmp R9b, 0
+    jne nextByteP1
+    mov RAX, 0
+    jmp setPipeline2
+
 nextByteP1:
-vpsrlq ymm14, ymm14, 0
+    vpsrlq ymm14, ymm14, 0
     vpextrb RAX, xmm0, 0                ;get byte from file to pipeline 1
     ;bit shift first quarter of the register
     vpand ymm15, ymm0, ymm14
     vpsrlq ymm15, ymm15, 8
     vpandn ymm0, ymm14, ymm0
     vpor ymm0, ymm0, ymm15              
+    mov RAX, [RCX+RAX*8]
 
-setPipeline2:
-    reloadPipeline xmm9, R8, pipelineAdress2, xmm0, 1, 64, setPipeline3
+setPipeline2:  
+    test R8, R8
+    jz setPipeline3
+    reloadPipeline xmm9, R8, pipelineAdress2, xmm0, 1, 00B2h, 008Dh, setPipeline3, 256, R8w, bitCounterP2
+    ;reloadPipeline MACRO nullMask, addressSource, addressMem, registerBroker, registerPart, registerQuarter, nextChar
+;LOCAL nextByte
+;    movq RBX, xmm9                  ;move null character mask to mask register
+;    test EBX, EBX                         ;if character is not null then set pointer on it for pipeline
+;    jnz nextByteP2                         ;else load code of next byte for pipeline
+;    psrldq xmm9, 16                 ;move register to next value
+;    mov R8, pipelineAdress2
+;    add R8, 2               ;set pointer to character                  //16 -> 2?
+;    jmp setPipeline3                        ;move to next pipeline
+
+;nextByteP2:
+;    vpermq ymm14, ymm14, 00B2h
+;    vpextrb R8, xmm0, 8      ;get byte from file to pipeline 1
+    ;bit shift a quarter of the register
+;    vpand ymm15, ymm0, ymm14
+;    vpsrlq ymm15, ymm15, 8
+;    vpandn ymm0, ymm14, ymm0                    ;zmieniæ makro na permutacje
+;    vpor ymm0, ymm0, ymm15        
+;    vpermq ymm14, ymm14, 008Dh                  
+;    mov R8, [RCX+R8*8]                        ;load pointer to next char
 
 setPipeline3:
-    reloadPipeline xmm10, R14, pipelineAdress3, xmm12, 0, 128, setPipeline4
-    vextracti128 xmm12, ymm0, 1
+    test R14, R14
+    jz setPipeline4
+;    reloadPipeline xmm10, R14, pipelineAdress3, xmm12, 0, 128, setPipeline4, 16, R14w, bitCounterP3
+;    vextracti128 xmm12, ymm0, 1
 
 setPipeline4:
-    reloadPipeline xmm11, R15, pipelineAdress4, xmm12, 1, 192, loadCode
+    test R15, R15
+    jz testEndOfFrame
+    reloadPipeline xmm11, R15, pipelineAdress4, xmm12, 1, 1Eh, 17h, testEndOfFrame, 24, R15w, bitCounterP4
     vextracti128 xmm12, ymm0, 1
 
-mov R8, R9                         ;copy mask of data
-    mov RAX, 00000000000000ffh                        ;set mask for compatison
-    and AX, R8w             
+;mov R8, R9                         ;copy mask of data
+;    mov RAX, 00000000000000ffh                        ;set mask for compatison
+;    and AX, R8w             
+;    jz loadFrame
+;    cmp R9, 0
+;    jne loadFrame
+testEndOfFrame:
+    mov RBX, RAX
+    or RBX, R8
+    or RAX, R14
+    or RAX, R15
+    test RAX, RAX
     jz loadFrame
+    jmp loadCode
 
+    
 endCoding:
+    ;load bit counters for check how merge data
+    mov AX, bitCounterP1
+    mov R8w, bitCounterP2
+    mov R14w, bitCounterP3
+    mov R15w, bitCounterP4
+
+    ;check necessity of merging Pipeline2
+    test R8, R8
+    jz alignCode
+
+mergeReg:
+    ;check availability to merging registers
+    add AX, R8w
+    cmp AX, 64
+    jg regOverflow1                 ;if data is too big then merge only part of the register
+    shlx R10, R10, R8               ;else make free space
+    or R10, R11                     ;and merge registers
+    jmp mergePipeline2
+
+regOverflow1:
+    ;calculate number of free space
+    sub AX, R8w
+    mov RBX, 64                 
+    sub RBX, RAX
+    ;shift registers to make free space
+    shlx R10, R10, RBX
+    ;make mask for merging registers
+    mov RAX, 1
+    shlx RAX, RAX, RBX
+    sub RAX, 1
+    ;get bits to merging
+    mov R9, R11
+    sarx R9, R9, RAX
+    ;merge registers
+    or R10, R9
+
+dropReg:
+    ;drop register to memory
+    rol R10, 8
+    mov [RSI], R10b
+    sub AX, 8
+    inc RSI
+    cmp AX, 0
+    jg dropReg
+    jmp mergeReg
+
+
+mergePipeline2:
+    test R14, R14
+    jz alignCode
+
+
+alignCode:
+;code alignment
+    mov RBX, 64
+    sub BX, AX
+    shlx R10, R10, RBX
+
+
+endProcedure:
+
     mov RSP, stackPointer
     pop RDI
     pop RSI
@@ -881,6 +1115,10 @@ endCoding:
 
     ret
 codeFile endp
+
+
+
+
 
 
 end

@@ -4,7 +4,7 @@
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 0.1
+//version 0.6
 //
 //Class which manages compression
 
@@ -16,6 +16,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace JA_Kompresja
 {
@@ -24,7 +25,9 @@ namespace JA_Kompresja
     abstract internal class Model
     {
 
-        public abstract void Compress((string[], string) settings);
+        public abstract Tuple<byte[], char[][], long> Compress(string path);
+
+        public abstract byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength);
         
     }
 
@@ -51,13 +54,11 @@ namespace JA_Kompresja
         //settings - a tuple with 2 strings which is (path to file, threads as string to know how many threads should be created)
         //
         //return value: void
-        override public void Compress((string[], string) settings) //path, threadsString
+        override public Tuple<byte[], char[][], long> Compress(string path) //path, threadsString
         {
             int notNullBytes = 0;
-            string[] paths = settings.Item1; //string representing path to file or folder
-            string threadsString = settings.Item2; //string representing number of threads to start
             int threads = 0;//number of threads to start;
-            byte[] fileArray = {10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0};//File.ReadAllBytes(paths[0]); //file readed as bytes //TO DO: zrobić w pętli dla wszystkich plików//
+            byte[] fileArray = /*{10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0};*/File.ReadAllBytes(path); //file readed as bytes 
             Int64[] countedBytesArray = new Int64[256];
             Int64[] sortedArray;
             TreeNode[] nodes;
@@ -66,16 +67,6 @@ namespace JA_Kompresja
             byte[] codedArray;
             long codedArrayLength=0;
 
-            try
-            {
-                threads = int.Parse(threadsString); //try to parse threadsString to number
-            }
-            catch (FormatException e)
-            {
-                threads = 1; //if cannot set default to 1
-            }
-
-            //TO DO: starting threads and delegate jobs to them
 
             //wczytanie pliku i przesłanie do biblioteki
             countBytes(fileArray, fileArray.Length, countedBytesArray);//pass file's bytes to library by array
@@ -136,7 +127,7 @@ namespace JA_Kompresja
                 codedArrayLength += countedBytesArray[i] * huffmanCode[i].Length;
             }
 
-            codedArray = new byte[codedArrayLength];
+            codedArray = new byte[(int)Math.Ceiling(((double)codedArrayLength / 8.0))];
 
             unsafe
             {
@@ -154,7 +145,13 @@ namespace JA_Kompresja
                 }
             }
 
-            Console.WriteLine(codedArray.ToString());
+            return new Tuple<byte[], char[][], long>( codedArray, huffmanCode, fileArray.LongLength);
+        }
+
+        public override byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength)
+        {
+
+            return null;
         }
     }
     //model class which operate on c++ library
@@ -164,15 +161,23 @@ namespace JA_Kompresja
         [StructLayout(LayoutKind.Sequential)]
         struct ByteCounter
         {
-            int Byte;
-            Int64 Counter;
+            public int Byte { get; set; }
+            public Int64 Counter { get; set; }
         }
 
         [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
-        unsafe static extern long* countBytes(byte[] byteTable, int arraySize);
+        unsafe static extern long* countBytes(byte* byteTable, int arraySize, long* ptr);
 
         [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
-        unsafe static extern IntPtr makeSortedArray(Int64* array, int sortedArraylength);
+        unsafe static extern IntPtr makeSortedArray(Int64* array, int sortedArraylength, ByteCounter* countersArray);
+
+        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        unsafe static extern IntPtr makeHuffmanCodeTree(ByteCounter* sortedInputArray, int sizeOfInputArray, TreeNode* huffmanTree);
+
+        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        unsafe static extern void codeFile(char** huffmanCode, byte* fileArray, byte* codedArray, long fileLength);
+
+        unsafe static extern void decodeFile(TreeNode* treeRoot, byte* fileArray, byte* codedArray, long fileLength);
 
         //Compress
         //method which starts and menages compression
@@ -181,33 +186,103 @@ namespace JA_Kompresja
         //settings - a tuple with 2 strings which is (array of paths to file, threads as string to know how many threads should be created)
         //
         //return value: void
-        override public void Compress((string[], string) settings)//paths, threadsString
+        override public Tuple<byte[], char[][], long> Compress(string path)//paths, threadsString
         {
-            string[] paths = settings.Item1; //string representing path to file or folder
-            string threadsString = settings.Item2; //string representing number of threads to start
             int threads = 0;//number of threads to start;
             byte[] fileArray = { 10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0 };
-            IntPtr sortedBytes;
-
-            try
-            {
-                threads = int.Parse(threadsString); //try to parse threadsString to number
-            }
-            catch (FormatException e)
-            {
-                threads = 1; //if cannot set default to 1
-            }
+            byte[] codedArray;
+            long codedArrayLength = 0;
+            int notNullBytes = 0;
+            ByteCounter[] byteCounter;
+            TreeNode[] nodesArray;
+            char[][] huffmanCode;
+            long[] countedBytes;
 
             unsafe
             {
-                Int64* countedBytes;
 
-                countedBytes = countBytes(fileArray, fileArray.Length);
+                countedBytes = new long[256];
 
-                sortedBytes = makeSortedArray(countedBytes, 256);
+                fixed (byte* fileArrayPtr = fileArray)
+                fixed (long* countedBytesPtr = countedBytes)
+                {
+                    countBytes(fileArrayPtr, fileArray.Length, countedBytesPtr);
+
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        if (countedBytes[i] != 0)
+                        {
+                            ++notNullBytes;
+                        }
+                    }
+                }
+                byteCounter = new ByteCounter[notNullBytes];
+
+                fixed (ByteCounter* byteCounterPtr = byteCounter)
+                {
+                    fixed (long* xPtr = countedBytes)
+                    {
+                        makeSortedArray(xPtr, notNullBytes, byteCounterPtr);
+                    }
+                    nodesArray = new TreeNode[notNullBytes*2-1];
+
+                    fixed (TreeNode* nodesArrayPtr = nodesArray)
+                    {
+                        makeHuffmanCodeTree(byteCounterPtr, notNullBytes, nodesArrayPtr);   
+                    }
+                }
             }
 
+            huffmanCode = new char[256][];
+
+            TreeNodeIterator iter = new TreeNodeIterator(nodesArray.Last());
+
+            {
+                long nodeByte = 0;
+
+                do
+                {
+                    nodeByte = iter.Current.NodeByte;
+
+                    huffmanCode[nodeByte] = iter.getCode();//new HuffmanCodeElement(nodeByte, iter.getCode());
+
+                } while (iter.MoveNext());
+            }
+
+            for (int i = 0; i < huffmanCode.Length; i++)
+            {
+                if (huffmanCode[i] != null)
+                    codedArrayLength += countedBytes[i] * huffmanCode[i].Length;
+            }
+
+            codedArray = new byte[(int)Math.Ceiling(((double)codedArrayLength / 8.0))];
+
+            unsafe
+            {
+                fixed (char** pHuffmanCode = new char*[huffmanCode.Length])
+                fixed(byte* fileArrayPtr = fileArray)
+                fixed(byte* codedArrayPtr = codedArray)
+                {
+                    for (int i = 0; i < huffmanCode.Length; i++)
+                    {
+                        fixed (char* pSubArray = huffmanCode[i])
+                        {
+                            pHuffmanCode[i] = pSubArray;
+                        }
+                    }
+
+                    codeFile(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
+                }
+            }
+
+            return new Tuple<byte[], char[][], long>(codedArray, huffmanCode, fileArray.LongLength);
             //Console.WriteLine(sortedBytes.ToString());
+        }
+
+        override public byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength)
+        {
+
+            return null;
         }
     }
 }

@@ -17,17 +17,25 @@ namespace JA_Kompresja
     [StructLayout(LayoutKind.Sequential)]
     internal struct TreeNode
     {
-        public Int64 NodeByte { get; }
-        public Int64 NodeValue {  get; }
-        unsafe public TreeNode* LessNode {  get; }
-        unsafe public TreeNode* GreaterNode { get; }
+        public Int64 NodeByte { get; set; }
+        public Int64 NodeValue { get; set; }
+        unsafe public TreeNode* LeftNode { get; set; }
+        unsafe public TreeNode* RigthNode { get; set; }
 
         unsafe public TreeNode()
         {
             NodeByte = 0;
             NodeValue = 0;
-            LessNode = null;
-            GreaterNode = null;
+            LeftNode = null;
+            RigthNode = null;
+        }
+
+        unsafe public TreeNode(Int64 NodeByte, Int64 NodeValue, TreeNode* LeftNode, TreeNode* RigthNode)
+        {
+            this.NodeByte = NodeByte;
+            this.NodeValue = NodeValue;
+            this.LeftNode = LeftNode;
+            this.RigthNode = RigthNode;
         }
     }
 
@@ -51,12 +59,12 @@ namespace JA_Kompresja
             NestedNodes.RemoveAt(NestedNodes.Count - 1);
             NestedNodes.Add( new Tuple<TreeNode, char>(currentNode, '1'));
 
-            var ptr = NestedNodes.Last().Item1.GreaterNode;
+            var ptr = NestedNodes.Last().Item1.RigthNode;
             NestedNodes.Add(new Tuple<TreeNode, char>(*ptr, '0'));
 
-            while (NestedNodes.Last().Item1.LessNode != null)
+            while (NestedNodes.Last().Item1.LeftNode != null)
             {
-                ptr = NestedNodes.Last().Item1.LessNode;
+                ptr = NestedNodes.Last().Item1.LeftNode;
                 NestedNodes.Add(new Tuple<TreeNode, char>(*ptr, '0'));
             }
 
@@ -93,9 +101,9 @@ namespace JA_Kompresja
         {
             NestedNodes = new List<Tuple<TreeNode, char>>();
             NestedNodes.Add(new Tuple<TreeNode, char>(parent, '0'));
-            while(NestedNodes.Last().Item1.LessNode != null)
+            while(NestedNodes.Last().Item1.LeftNode != null)
             {
-                var ptr = NestedNodes.Last().Item1.LessNode;
+                var ptr = NestedNodes.Last().Item1.LeftNode;
                 NestedNodes.Add(new Tuple<TreeNode, char>(*ptr, '0'));
                 Current = *ptr;
             }
@@ -106,9 +114,9 @@ namespace JA_Kompresja
             var parent = NestedNodes.First().Item1;
             NestedNodes = new List<Tuple<TreeNode, char>>();
             NestedNodes.Add(new Tuple<TreeNode, char>(parent, '0'));
-            while (NestedNodes.Last().Item1.LessNode != null)
+            while (NestedNodes.Last().Item1.LeftNode != null)
             {
-                var ptr = NestedNodes.Last().Item1.LessNode;
+                var ptr = NestedNodes.Last().Item1.LeftNode;
                 NestedNodes.Add(new Tuple<TreeNode, char>(*ptr, '0'));
                 Current = *ptr;
             }

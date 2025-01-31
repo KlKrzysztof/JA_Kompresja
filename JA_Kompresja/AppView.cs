@@ -14,6 +14,7 @@ namespace JA_Kompresja
 {
     public partial class appView : Form
     {
+        public static float ApplicationVer = 0.6f;
         public appView()
         {
             InitializeComponent();
@@ -72,7 +73,7 @@ namespace JA_Kompresja
             //Return the files the user selected  
             else
             {
-                foreach(var file in dialog.FileNames)
+                foreach (var file in dialog.FileNames)
                 {
                     filePath += file + ';'; //merge all files in one string separate by ';'
                 }
@@ -149,7 +150,7 @@ namespace JA_Kompresja
         //return value: void
         private void compressButton_Click(Object sender, EventArgs e)
         {
-            string path = filePathTextbox.Text, threadsString = chooseThreadsNumber.SelectedText;
+            string path = filePathTextbox.Text, threadsString = chooseThreadsNumber.SelectedItem!.ToString()!;
             bool cppCheck = cppCheckbox.Checked, asmCheck = asmCheckbox.Checked;
 
             Controler.Compress(path, threadsString, cppCheck, asmCheck);
@@ -158,6 +159,11 @@ namespace JA_Kompresja
         private void filePathTextbox_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void DecompresionStart_Click(object sender, EventArgs e)
+        {
+            Controler.Decompress(filePathTextbox.Text, chooseThreadsNumber.SelectedText, cppCheckbox.Checked, asmCheckbox.Checked);
         }
     }
 }

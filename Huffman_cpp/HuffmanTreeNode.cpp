@@ -18,3 +18,26 @@ long HuffmanTreeNode::getValue()
 {
 	return value;
 }
+
+void HuffmanTreeNode::addValue(long val)
+{
+	this->value += val;
+}
+
+void HuffmanTreeNode::setLeft(HuffmanTreeNode* left)
+{
+	this->leftChild = left;
+}
+
+void HuffmanTreeNode::setRight(HuffmanTreeNode* right)
+{
+	this->rightChild = right;
+}
+
+HuffmanTreeNode* HuffmanTreeNode::getLeft() {
+	return leftChild;
+}
+
+HuffmanTreeNode* HuffmanTreeNode::getRigth() {
+	return rightChild;
+}

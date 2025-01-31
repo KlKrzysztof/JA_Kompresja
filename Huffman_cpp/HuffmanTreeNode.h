@@ -2,8 +2,8 @@
 #include <stdint.h>
 class HuffmanTreeNode
 {
-	long byte;
-	long value;
+	long long byte;
+	long long value;
 	HuffmanTreeNode* leftChild;
 	HuffmanTreeNode* rightChild;
 
@@ -15,5 +15,15 @@ public:
 	long getByte();
 
 	long getValue();
+
+	void addValue(long val);
+
+	void setLeft(HuffmanTreeNode* left);
+
+	void setRight(HuffmanTreeNode* right);
+
+	HuffmanTreeNode* getLeft();
+
+	HuffmanTreeNode* getRigth();
 };
 
