@@ -108,7 +108,7 @@ nextByte:
     mov addressSource, [RCX+addressSource*8]                        ;load pointer to next char
 ENDM
 
-mergeRegister MACRO mergingRegisterCounter, mergingRegister
+mergeRegister MACRO mergingRegisterCounter, mergingRegister, nextRegister
 LOCAL mergeReg
 LOCAL regOverflow
 LOCAL dropReg
@@ -119,13 +119,14 @@ LOCAL dropReg
     jg regOverflow                 ;if data is too big then merge only part of the register
     shlx R10, R10, mergingRegisterCounter               ;else make free space
     or R10, mergingRegister                     ;and merge registers
-    jmp mergePipeline2
+    jmp nextRegister
 
 regOverflow:
     ;calculate number of free space
     sub RAX, mergingRegisterCounter
     mov RBX, 64                 
     sub RBX, RAX
+    sub mergingRegisterCounter, RBX
     ;shift registers to make free space
     shlx R10, R10, RBX
     ;make mask for merging registers
@@ -147,6 +148,7 @@ dropReg:
     inc RSI
     cmp AX, 0
     jg dropReg
+    xor R10, R10
     jmp mergeReg
 ENDM
 
@@ -1047,46 +1049,55 @@ endCoding:
     test R8, R8
     jz alignCode
 
-mergeReg:
+    mergeRegister R8, R11, mergePipeline3
+;mergeReg:
     ;check availability to merging registers
-    add AX, R8w
-    cmp AX, 64
-    jg regOverflow1                 ;if data is too big then merge only part of the register
-    shlx R10, R10, R8               ;else make free space
-    or R10, R11                     ;and merge registers
-    jmp mergePipeline2
+;    add AX, R8w
+;    cmp AX, 64
+;    jg regOverflow1                 ;if data is too big then merge only part of the register
+;    shlx R10, R10, R8               ;else make free space
+;    or R10, R11                     ;and merge registers
+;    jmp mergePipeline2
 
-regOverflow1:
+;regOverflow1:
     ;calculate number of free space
-    sub AX, R8w
-    mov RBX, 64                 
-    sub RBX, RAX
+;    sub AX, R8w
+;    mov RBX, 64                 
+;    sub RBX, RAX
     ;shift registers to make free space
-    shlx R10, R10, RBX
+;    shlx R10, R10, RBX
     ;make mask for merging registers
-    mov RAX, 1
-    shlx RAX, RAX, RBX
-    sub RAX, 1
+;    mov RAX, 1
+;    shlx RAX, RAX, RBX
+;    sub RAX, 1
     ;get bits to merging
-    mov R9, R11
-    sarx R9, R9, RAX
+;    mov R9, R11
+;    sarx R9, R9, RAX
     ;merge registers
-    or R10, R9
+;    or R10, R9
 
-dropReg:
+;dropReg:
     ;drop register to memory
-    rol R10, 8
-    mov [RSI], R10b
-    sub AX, 8
-    inc RSI
-    cmp AX, 0
-    jg dropReg
-    jmp mergeReg
+;    rol R10, 8
+;    mov [RSI], R10b
+;    sub AX, 8
+ ;   inc RSI
+ ;   cmp AX, 0
+;    jg dropReg
+;    jmp mergeReg
 
 
-mergePipeline2:
+mergePipeline3:
     test R14, R14
     jz alignCode
+
+    mergeRegister R14, R12, mergePipeline4
+
+mergePipeline4:
+    test R15, R15
+    jz alignCode
+
+    mergeRegister R15, R13, alignCode
 
 
 alignCode:

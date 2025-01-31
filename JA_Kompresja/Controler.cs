@@ -210,7 +210,14 @@ namespace JA_Kompresja
                 }
             }
 
-            pathsArray = new string[filesCounter]; //initialize array
+            if (filesCounter < threads)
+            {
+                pathsArray = new string[threads]; //initialize array
+            }
+            else
+            {
+                pathsArray = new string[filesCounter]; //initialize array
+            }
 
             {//loop scope
                 int i = 0; //array iterator
@@ -232,54 +239,44 @@ namespace JA_Kompresja
             }
 
 
-
-
-            if (asmCheck) // make right model and call compression
+            sw.Start();
+            while (fileIndex < pathsArray.Length) // creating threads
             {
-                sw.Start();
-                while(fileIndex < threads) // creating threads
+                int filesAlreadyDone = 0;
+
+                if (asmCheck) // make right model and call compression
                 {
+
                     for (int i = 0; i < threads; ++i)
                     {
+                        models[i] = new ModelAsm();
+                        threadsArray[i] = new Thread(() => funForThread(compressionResult[i], models[i], pathsArray[i + filesAlreadyDone]));
+                        threadsArray[i].Start();
+                    }
 
-                        threadsArray[i] = new Thread(() =>
-                        {
 
-                            models[fileIndex] = new ModelAsm();
+                }
+                else if (cppCheck)
+                {
 
-                            if (i < pathsArray.Length)
-                                compressionResult[i] = models[i].Compress(pathsArray[i]);
-
-                        });
+                    for (int i = 0; i < threads; ++i) // creating threads
+                    {
+                        models[i] = new ModelCpp();
+                        threadsArray[i] = new Thread(() => funForThread(compressionResult[i], models[i], pathsArray[i + filesAlreadyDone]));
                         threadsArray[i].Start();
                     }
                 }
-                sw.Stop();
-            }
-            else if (cppCheck)
-            {
-                sw.Start();
-                for (int i = 0; i < threads; ++i) // creating threads
-                {
-                    threadsArray[i] = new Thread(() =>
-                    {
-                        models[i] = new ModelCpp();
 
-                        if (i < pathsArray.Length)
-                            compressionResult[i] = models[i].Compress(pathsArray[i]);
-                        
-                    });
-                    threadsArray[i].Start();
+                for (int i = 0; i < threads; ++i)
+                { //merging threads
+                    threadsArray[i].Join();
+                    
+                    compressedFile[i + filesAlreadyDone] = compressionResult[i].Item1;
                 }
-                sw.Stop();
-            }
 
-            for (int i = 0; i < threads; ++i)
-            { //merging threads
-                threadsArray[i].Join();
-                //compressedFile[i] = new byte[1];
-                compressedFile[i] = compressionResult[i].Item1;
+                filesAlreadyDone += threads;
             }
+            sw.Stop();
 
             var dialog = new SaveFileDialog()
             {
@@ -518,5 +515,10 @@ namespace JA_Kompresja
             }
         }
 
+
+        static void funForThread(Tuple<byte[], char[][], long> result, Model model, string fileName)
+        {
+            result = model.Compress(fileName);
+        }
     }
 }

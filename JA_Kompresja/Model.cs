@@ -58,7 +58,7 @@ namespace JA_Kompresja
         {
             int notNullBytes = 0;
             int threads = 0;//number of threads to start;
-            byte[] fileArray = /*{10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0};*/File.ReadAllBytes(path); //file readed as bytes 
+            byte[] fileArray = {10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0};//File.ReadAllBytes(path); //file readed as bytes 
             Int64[] countedBytesArray = new Int64[256];
             Int64[] sortedArray;
             TreeNode[] nodes;
