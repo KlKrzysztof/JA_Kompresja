@@ -1,10 +1,10 @@
-//Asembly Language - Project
+ï»¿ï»¿//Asembly Language - Project
 //Krzyszkof Klecha
 //section 11
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 0.1
+//version 1.0
 //
 //Class which is application's controler from MVC pattern
 
@@ -31,7 +31,7 @@ namespace JA_Kompresja
         [STAThread]
         static void Main()
         {
-            
+
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
@@ -39,7 +39,7 @@ namespace JA_Kompresja
             Application.Run(view);
         }
 
-        
+
 
         //loadStatistics
         //load times for StatisticsDisplay
@@ -178,14 +178,9 @@ namespace JA_Kompresja
             int filesCounter = 1;// count size of the array to initialize
             int startingPoint = 0;// starting point of new file path substr
             int endPoint = -1; // end point of file path substr
-            byte[][] compressedFile = null;
             String filePath = "";
-            Tuple<byte[], char[][], long>[] compressionResult = null;
             int threads = 1;
-            Stopwatch sw = new Stopwatch();
-            Thread[] threadsArray = null;
-            int fileIndex = 0;
-
+            Stopwatch sw = new();
             try
             {
                 threads = int.Parse(threadsString); //try to parse threadsString to number
@@ -195,15 +190,10 @@ namespace JA_Kompresja
                 threads = 1; //if cannot set default to 1
             }
 
-            compressionResult = new Tuple<byte[], char[][], long>[threads];
-
-            threadsArray = new Thread[threads];
-
             models = new Model[threads];
 
-            compressedFile = new byte[threads][];
-
-            foreach (char c in paths) { // count size of the array by counting ';'
+            foreach (char c in paths)
+            { // count size of the array by counting ';'
                 if (c == ';')
                 {
                     filesCounter++;
@@ -232,51 +222,71 @@ namespace JA_Kompresja
                     }
                     else
                     {
-                        pathsArray[i] = paths.Substring(startingPoint, paths.Length); //else take the rest of string at [filesCounter - 1]
+                        pathsArray[i] = paths.Substring(startingPoint, paths.Length - startingPoint); //else take the rest of string at [filesCounter - 1]
                     }
                 } while (endPoint != -1); // do while string end isn't reach
 
             }
 
+            List<Tuple<byte[], char[][], long>> compressionResult = [];
+            List<Thread> threadList = [];
+            List<byte[]> compressedFile = [];
+            int pathsArrayLength = pathsArray.Length;
 
             sw.Start();
-            while (fileIndex < pathsArray.Length) // creating threads
+            if (cppCheck)
             {
-                int filesAlreadyDone = 0;
+                for (int i = 0; i < pathsArrayLength; i++)
+                {
+                    var tempPath = pathsArray[i];
 
-                if (asmCheck) // make right model and call compression
+                    Thread t = new(new ThreadStart(() =>
+                    {
+                        var m = new ModelCpp();
+                        var res = m.Compress(tempPath);
+                        lock (compressionResult)
+                        {
+                            compressionResult.Add(res);
+                        }
+                    }));
+
+                    threadList.Add(t);
+                    t.Start();
+                }
+            }
+
+            else if (asmCheck)
+            {
+                for (int i = 0; i < pathsArrayLength; i++)
                 {
 
-                    for (int i = 0; i < threads; ++i)
+                    var tempPath = pathsArray[i];
+
+                    Thread t = new(new ThreadStart(() =>
                     {
-                        models[i] = new ModelAsm();
-                        threadsArray[i] = new Thread(() => funForThread(compressionResult[i], models[i], pathsArray[i + filesAlreadyDone]));
-                        threadsArray[i].Start();
-                    }
+                        var m = new ModelAsm();
+                        var res = m.Compress(tempPath);
+                        lock (compressionResult)
+                        {
+                            compressionResult.Add(res);
+                        }
+                    }));
 
-
+                    threadList.Add(t);
+                    t.Start();
                 }
-                else if (cppCheck)
-                {
+            }
 
-                    for (int i = 0; i < threads; ++i) // creating threads
-                    {
-                        models[i] = new ModelCpp();
-                        threadsArray[i] = new Thread(() => funForThread(compressionResult[i], models[i], pathsArray[i + filesAlreadyDone]));
-                        threadsArray[i].Start();
-                    }
-                }
-
-                for (int i = 0; i < threads; ++i)
-                { //merging threads
-                    threadsArray[i].Join();
-                    
-                    compressedFile[i + filesAlreadyDone] = compressionResult[i].Item1;
-                }
-
-                filesAlreadyDone += threads;
+            for (int i = 0; i < pathsArrayLength; ++i)
+            {
+                threadList[i].Join();
+                if (compressionResult[i] != null)
+                    compressedFile.Add(compressionResult[i].Item1);
+                else
+                    compressedFile.Add(null);
             }
             sw.Stop();
+
 
             var dialog = new SaveFileDialog()
             {
@@ -295,44 +305,27 @@ namespace JA_Kompresja
             {
                 filePath = dialog.FileName;
 
-                if(File.Exists(filePath))
+                if (File.Exists(filePath))
                     File.Delete(filePath);
 
 
                 //fill file with compressed data
                 using (var fileStream = File.Create(filePath))
                 {
-                    string fileHufmanCode = "[";
-
                     fileStream.Write(Encoding.ASCII.GetBytes(fileHeader));
 
-                    
-
-                    for(int i = 0;i<pathsArray.Length;i++)
+                    for (int i = 0; i < pathsArray.Length; i++)
                     {
-                        foreach (var item in compressionResult[i].Item2)
+                        if (compressionResult[i] != null)
                         {
-                            fileHufmanCode += "[";
-                            if (item != null)
-                                foreach (var character in item)
-                                    fileHufmanCode += character.ToString();
-                            fileHufmanCode += "]";
+                            fileStream.Write(Encoding.ASCII.GetBytes(pathsArray[0] + "{\n"));
+
+                            fileStream.Write(compressedFile[i]);
+
+                            fileStream.Write(Encoding.ASCII.GetBytes("\n}"));
                         }
-
-                        fileHufmanCode += "]\n\n";
-
-                        var code = Encoding.ASCII.GetBytes(fileHufmanCode);
-
-                        fileStream.Write(Encoding.ASCII.GetBytes( pathsArray[0] + "(" + code.Length + "," + compressionResult[i].Item3.ToString() + "){\n" )); // nie code.length tylko d³ugoœæ kodu bitowego
-
-                        //wpisaæ kod huffmana
-                        fileStream.Write(code);
-
-                        fileStream.Write(compressedFile[i]);
-
-                        fileStream.Write(Encoding.ASCII.GetBytes("\n}"));
                     }
-                    
+
                     fileStream.Close();
                 }
             }
@@ -350,7 +343,7 @@ namespace JA_Kompresja
                     if (cppCheck) lib = "Cpp";
                     else lib = "Asm";
 
-                    line += lib + ","+ threadsString + "," + time + "," + DateTime.Now.ToLongDateString() + "\n";
+                    line += lib + "," + threadsString + "," + time + "," + DateTime.Now.ToLongDateString() + "\n";
 
                     fs.Write(Encoding.ASCII.GetBytes(line));
 
@@ -381,144 +374,7 @@ namespace JA_Kompresja
 
         public static void Decompress(string path, string threadsString, bool cppCheck, bool asmCheck)
         {
-            foreach (char c in path)
-            { // count size of the array by counting ';'
-                if (c == ';')
-                {
-                    MessageBox.Show("Decompression requires one file Only!", "Too many files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
 
-            if(asmCheck) models[0] = new ModelAsm();
-            else models[0] = new ModelCpp();
-
-            if (File.Exists(path))
-            {
-                using (var fileStream = File.Open(path, FileMode.Open))
-                {
-                    byte[] file = null;
-                    string fileText = null;
-
-                    fileStream.Read(file);
-
-                    if(file != null)
-                    {
-                        fileText = Encoding.ASCII.GetString(file);
-
-                        if (fileText.Contains(fileHeader))
-                        {
-                            var fileNameRegex = new Regex("");
-                            int fileCodeBeginIndex = fileText.IndexOf('{');
-                            int fileNameEndIndex = fileText.IndexOf('(');
-                            String fileName = string.Empty;
-                            string fileCode = string.Empty;
-                            string nodeCodeString = "0";
-
-                            if (fileCodeBeginIndex != -1)
-                            {
-                                int fileNameBeginIndex = fileText.LastIndexOf('\n', 0, fileNameEndIndex);
-                                if(fileNameBeginIndex != -1)
-                                    fileName = fileText.Substring(fileNameBeginIndex, fileNameEndIndex);
-                            }
-
-                            while(!(fileName == string.Empty))
-                            {
-                                var propertiesComaIndex = fileText.IndexOf(',', fileNameEndIndex, fileCodeBeginIndex);
-                                long CodeLength = long.Parse(fileText.Substring(fileNameEndIndex + 1, propertiesComaIndex));
-                                long decompressedFileLength = long.Parse(fileText.Substring(propertiesComaIndex+1, fileCodeBeginIndex));
-                                TreeNode[] huffmanTree = null;
-                                Tuple<String, int>[] validFields = new Tuple<string, int>[256];
-                                String treeText = fileText.Substring(fileCodeBeginIndex+1, fileText.IndexOf('\n', fileCodeBeginIndex+1));
-
-                                //odtworzenie drzewa
-                                int iterator = fileCodeBeginIndex + 2;//iterator musi wskazywaæ koniec ostatniego pola
-                                int fieldsCounter = 0;
-                                for(int i = 0;i<256;++i)
-                                {
-                                    if (treeText.Substring(iterator, iterator+1) != "[]")
-                                    {
-                                        int endOfFiled = fileText.IndexOf(']', fileCodeBeginIndex + iterator);
-                                        string field = fileText.Substring(iterator, endOfFiled);
-                                        validFields[fieldsCounter] = new Tuple<string, int>(field, iterator);
-                                        ++fieldsCounter;
-                                    }
-                                    ++iterator;
-                                }
-                                huffmanTree = new TreeNode[validFields.Length*2-1];
-                                for(int i = 0;validFields.Length*2-1 > i; ++i)
-                                {
-                                    bool gotNode = false;
-                                    //huffmanTree[i] = new TreeNode();
-
-                                    for(int j = 0;j<validFields.Length; ++j)
-                                    {
-                                        unsafe
-                                        {
-                                            if (validFields[j].Item1 == "[" + nodeCodeString + "]")
-                                            {
-                                                huffmanTree[i] = new TreeNode(validFields[j].Item2, 0, null, null);
-                                                gotNode = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (gotNode)
-                                    {
-                                        //wycofaæ ostatni node i zrobiæ odnogê w prawo o ile mo¿liwe
-                                        if (nodeCodeString[nodeCodeString.Length - 1] == '1')
-                                        {
-                                            while (nodeCodeString[nodeCodeString.Length - 1] == '1')
-                                                nodeCodeString = nodeCodeString.Substring(0, nodeCodeString.Length - 1);
-
-                                            nodeCodeString = nodeCodeString.Substring(0, nodeCodeString.Length - 1);
-
-                                            nodeCodeString += "1";
-                                        }
-                                        else
-                                        {
-                                            nodeCodeString = nodeCodeString.Substring(0, nodeCodeString.Length - 1);
-                                            nodeCodeString += "1";
-                                        }
-                                    }
-                                    else//zaimplementowaæ prawe odnogi drzewa
-                                    {
-                                        //ci¹gn¹æ node dalej w lewo i utworzyæ wêze³ rodzica
-                                        unsafe
-                                        {
-                                            nodeCodeString += "0";
-                                            huffmanTree[i] = new TreeNode();
-                                            fixed(TreeNode* node = &huffmanTree[i])
-                                                huffmanTree[i - 1].LeftNode = node;
-                                        }
-                                    }
-                                }
-
-                                fileCode = fileText.Substring(fileCodeBeginIndex + 2, (int) CodeLength);
-
-                                models[0].Decompress(Encoding.ASCII.GetBytes(fileCode), huffmanTree, decompressedFileLength);
-                            }
-                        }
-                        else
-                        {
-                            MessageBox.Show("File is wrong format", "Wrong file format", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("File is empty", "Empty file", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show("File do not exists", "Not a file", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-
-        static void funForThread(Tuple<byte[], char[][], long> result, Model model, string fileName)
-        {
-            result = model.Compress(fileName);
         }
     }
 }

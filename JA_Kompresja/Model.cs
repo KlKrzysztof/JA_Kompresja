@@ -4,7 +4,7 @@
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 0.6
+//version 1.0
 //
 //Class which manages compression
 
@@ -42,10 +42,10 @@ namespace JA_Kompresja
         static extern void makeSortedArray(Int64[] array, Int64[] sortedArray, int sortedArraylength);//function rewrites array in -- order without 0
         
         [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
-        unsafe static extern void makeHuffmanCodeTree(Int64[] sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray);
+        unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray);
 
         [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
-        unsafe static extern void codeFile(/*HuffmanCodeElement[]*/char** huffmanCode, byte[] fileArray, byte[] codedArray, Int64 fileLength);
+        unsafe static extern void codeFile1(/*HuffmanCodeElement[]*/char** huffmanCode, byte* fileArray, byte* codedArray, Int64 fileLength);
 
         //Compress
         //method which starts and menages compression
@@ -56,9 +56,11 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path) //path, threadsString
         {
+            if (path == null) return null;
+
             int notNullBytes = 0;
             int threads = 0;//number of threads to start;
-            byte[] fileArray = {10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0};//File.ReadAllBytes(path); //file readed as bytes 
+            byte[] fileArray = File.ReadAllBytes(path); //file readed as bytes 
             Int64[] countedBytesArray = new Int64[256];
             Int64[] sortedArray;
             TreeNode[] nodes;
@@ -66,6 +68,7 @@ namespace JA_Kompresja
             char[][] huffmanCode;
             byte[] codedArray;
             long codedArrayLength=0;
+            long[] CBA_copy = new long[256];
 
 
             //wczytanie pliku i przesłanie do biblioteki
@@ -80,9 +83,10 @@ namespace JA_Kompresja
 
             sortedArray = new Int64[notNullBytes*2];
 
-            makeSortedArray(countedBytesArray, sortedArray, sortedArray.Length);
+            
+            Array.Copy(countedBytesArray, CBA_copy, countedBytesArray.Length);      //save data form the array
 
-            Console.WriteLine(sortedArray.ToString());
+            makeSortedArray(countedBytesArray, sortedArray, sortedArray.Length);
 
             nodes = new TreeNode[notNullBytes*2-1];
 
@@ -94,15 +98,14 @@ namespace JA_Kompresja
             //nodes = new Int64[notNullBytes * 8];
             unsafe
             {
+                fixed(long* sortedArrayPtr =  sortedArray) 
                 fixed (TreeNode* pNodes = nodes)
                 {
 
-                    makeHuffmanCodeTree(sortedArray, sortedArray.Length, pNodes);
+                    makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes);
 
                 }
             }
-
-            Console.WriteLine(nodes.ToString());
 
             huffmanCode = new char[256][];//new HuffmanCodeElement[256];
 
@@ -119,12 +122,11 @@ namespace JA_Kompresja
 
                 } while (iter.MoveNext());
             }
-            Console.WriteLine(huffmanCode.ToString());
 
             for(int i = 0; i < huffmanCode.Length; i++)
             {
                 if (huffmanCode[i] != null)
-                codedArrayLength += countedBytesArray[i] * huffmanCode[i].Length;
+                codedArrayLength += CBA_copy[i] * huffmanCode[i].Length;
             }
 
             codedArray = new byte[(int)Math.Ceiling(((double)codedArrayLength / 8.0))];
@@ -140,8 +142,12 @@ namespace JA_Kompresja
                             pHuffmanCode[i] = pSubArray;
                         }
                     }
+                    fixed (byte* fileArrayPtr = fileArray)
+                    fixed (byte* codedArrayPtr = codedArray)
+                    {
 
-                    codeFile(pHuffmanCode, fileArray, codedArray, fileArray.Length);
+                        codeFile1(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
+                    }
                 }
             }
 
@@ -188,8 +194,10 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path)//paths, threadsString
         {
+            if (path == null) return null;
+
             int threads = 0;//number of threads to start;
-            byte[] fileArray = { 10, 4, 12, 5, 10, 4, 10, 5, 15, 10, 0, 0 };
+            byte[] fileArray = File.ReadAllBytes(path);
             byte[] codedArray;
             long codedArrayLength = 0;
             int notNullBytes = 0;
@@ -276,7 +284,7 @@ namespace JA_Kompresja
             }
 
             return new Tuple<byte[], char[][], long>(codedArray, huffmanCode, fileArray.LongLength);
-            //Console.WriteLine(sortedBytes.ToString());
+            
         }
 
         override public byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength)

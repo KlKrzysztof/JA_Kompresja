@@ -2,7 +2,7 @@
 #include <stdint.h>
 class HuffmanTreeNode
 {
-	long long byte;
+	unsigned long long byte;
 	long long value;
 	HuffmanTreeNode* leftChild;
 	HuffmanTreeNode* rightChild;
@@ -12,11 +12,15 @@ public:
 
 	HuffmanTreeNode(long _byte , long _value, HuffmanTreeNode* _leftChild, HuffmanTreeNode* _rightChild );
 
-	long getByte();
+	unsigned long long getByte();
 
-	long getValue();
+	void setByte(unsigned long long b);
 
-	void addValue(long val);
+	long long getValue();
+
+	void setValue(long long v);
+
+	void addValue(long long val);
 
 	void setLeft(HuffmanTreeNode* left);
 

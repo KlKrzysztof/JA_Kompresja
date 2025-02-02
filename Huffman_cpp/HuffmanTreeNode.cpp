@@ -9,17 +9,27 @@ HuffmanTreeNode::HuffmanTreeNode(long _byte, long _value, HuffmanTreeNode* _left
 	byte(_byte), value(_value), leftChild(_leftChild), rightChild(_rightChild)
 {}
 
-long HuffmanTreeNode::getByte()
+unsigned long long HuffmanTreeNode::getByte()
 {
 	return this->byte;
 }
 
-long HuffmanTreeNode::getValue()
+void HuffmanTreeNode::setByte(unsigned long long b)
+{
+	this->byte = b;
+}
+
+long long HuffmanTreeNode::getValue()
 {
 	return value;
 }
 
-void HuffmanTreeNode::addValue(long val)
+void HuffmanTreeNode::setValue(long long v)
+{
+	this->value = v;
+}
+
+void HuffmanTreeNode::addValue(long long val)
 {
 	this->value += val;
 }
