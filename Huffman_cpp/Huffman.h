@@ -4,7 +4,7 @@
 // semester 5
 // year 2024 / 25
 // Huffman coding compresion
-// version 1.0
+// version 1.1
 //
 // Dll library : c++ language
 #pragma once

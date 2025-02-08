@@ -37,10 +37,11 @@
             asmCheckbox = new CheckBox();
             tabControl = new TabControl();
             compresionTab = new TabPage();
+            DecompresionStart = new Button();
             compressButton = new Button();
             StatisticsTab = new TabPage();
             statisticsPanel = new FlowLayoutPanel();
-            DecompresionStart = new Button();
+            label1 = new Label();
             tabControl.SuspendLayout();
             compresionTab.SuspendLayout();
             StatisticsTab.SuspendLayout();
@@ -131,6 +132,7 @@
             // 
             // compresionTab
             // 
+            compresionTab.Controls.Add(label1);
             compresionTab.Controls.Add(DecompresionStart);
             compresionTab.Controls.Add(compressButton);
             compresionTab.Controls.Add(asmCheckbox);
@@ -148,6 +150,16 @@
             compresionTab.TabIndex = 1;
             compresionTab.Text = "Compresion";
             compresionTab.UseVisualStyleBackColor = true;
+            // 
+            // DecompresionStart
+            // 
+            DecompresionStart.Location = new Point(9, 334);
+            DecompresionStart.Name = "DecompresionStart";
+            DecompresionStart.Size = new Size(164, 29);
+            DecompresionStart.TabIndex = 8;
+            DecompresionStart.Text = "Start Decompresion";
+            DecompresionStart.UseVisualStyleBackColor = true;
+            DecompresionStart.Click += DecompresionStart_Click;
             // 
             // compressButton
             // 
@@ -181,15 +193,15 @@
             statisticsPanel.Size = new Size(913, 567);
             statisticsPanel.TabIndex = 0;
             // 
-            // DecompresionStart
+            // label1
             // 
-            DecompresionStart.Location = new Point(9, 334);
-            DecompresionStart.Name = "DecompresionStart";
-            DecompresionStart.Size = new Size(164, 29);
-            DecompresionStart.TabIndex = 8;
-            DecompresionStart.Text = "Start Decompresion";
-            DecompresionStart.UseVisualStyleBackColor = true;
-            DecompresionStart.Click += DecompresionStart_Click;
+            label1.AutoSize = true;
+            label1.Location = new Point(637, 253);
+            label1.Name = "label1";
+            label1.Size = new Size(50, 20);
+            label1.TabIndex = 9;
+            label1.Text = "label1";
+            label1.Click += label1_Click;
             // 
             // appView
             // 
@@ -224,5 +236,6 @@
         private FlowLayoutPanel statisticsPanel;
         private Button compressButton;
         private Button DecompresionStart;
+        private Label label1;
     }
 }

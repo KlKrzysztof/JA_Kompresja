@@ -4,7 +4,7 @@
 ;semester 5
 ;year 2024/25
 ;Huffman coding compresion
-;version 1.0
+;version 1.1
 ;
 ;Dll library: asembly language
 
@@ -25,7 +25,10 @@ ENDM
 
 saveReg MACRO
     push RSP
+    push RAX
     push RBX
+    push RCX
+    push RDX
     push RBP
     push R8
     push R9
@@ -51,7 +54,10 @@ getReg MACRO
     pop R9
     pop R8
     pop RBP
+    pop RDX
+    pop RCX
     pop RBX
+    pop RAX
     pop RSP
 ENDM
 
@@ -255,7 +261,7 @@ makeSortedArray endp
 ;   RBX  - input array iterator
 ;   RDX  - size of the input array
 ;   RDI  - output array pointer
-;   R9   - reverse iterator for rewriting input array
+;   R9   - orphan node counter
 ;   R10  - iterator for search where to insert node in the input array
 ;   xmm0 - node one
 ;   xmm1 - pointers of node one
@@ -351,6 +357,8 @@ searchInsert:
     mov RAX, [RSI + R10*8+8]            ;get counter
     cmp RAX, R9                         ;if node counter is greater then current counter
     jge writeNode
+    cmp R10, RDX
+    je writeNode
     add R10, 2
     jmp searchInsert
 

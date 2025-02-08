@@ -4,7 +4,7 @@
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 0.1
+//version 1.1
 //
 //Class which is application's view from MVC pattern
 
@@ -18,6 +18,11 @@ namespace JA_Kompresja
         public appView()
         {
             InitializeComponent();
+        }
+
+        public void showTime(string time)
+        {
+            this.label1.Text = time;
         }
 
         //appView_load
@@ -42,7 +47,7 @@ namespace JA_Kompresja
 
             this.cppCheckbox.Checked = true;//seting default library
 
-            Controler.loadStatistics();//loading statistics
+            //Controler.loadStatistics();//loading statistics
         }
 
         //openExplorerButton_Click
@@ -164,6 +169,11 @@ namespace JA_Kompresja
         private void DecompresionStart_Click(object sender, EventArgs e)
         {
             Controler.Decompress(filePathTextbox.Text, chooseThreadsNumber.SelectedText, cppCheckbox.Checked, asmCheckbox.Checked);
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

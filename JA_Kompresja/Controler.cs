@@ -4,7 +4,7 @@
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 1.0
+//version 1.1
 //
 //Class which is application's controler from MVC pattern
 
@@ -48,7 +48,7 @@ namespace JA_Kompresja
         //return value: void
         public static void loadStatistics()
         {
-            string path = @"../../../../Data/Times.csv";
+            string path = @"Times.csv";
             StreamReader file = new StreamReader(path);
             string line, listBoxItem, library = "", threads = "", time = "", date = "";
             int commentIndex = 0, startLineIndex = 0, startlistIndex = 0, comaIndex = 0;
@@ -330,7 +330,7 @@ namespace JA_Kompresja
                 }
             }
 
-            if (!File.Exists(timesPath))
+            /*if (!File.Exists(timesPath))
             {
                 using (FileStream fs = File.Create(timesPath))
                 {
@@ -369,7 +369,9 @@ namespace JA_Kompresja
 
                     fs.Close();
                 }
-            }
+            }*/
+
+            view.showTime(((double)sw.Elapsed.Milliseconds / 1000.0).ToString());
         }
 
         public static void Decompress(string path, string threadsString, bool cppCheck, bool asmCheck)

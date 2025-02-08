@@ -4,15 +4,17 @@
 //semester 5
 //year 2024/25
 //Huffman coding compresion
-//version 1.0
+//version 1.1
 //
 //Class which manages compression
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,17 +36,17 @@ namespace JA_Kompresja
     //model class which operate on asembly library
     class ModelAsm : Model
     {
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
-        static extern void countBytes(byte[] file, int arraySize, Int64[] countedBytes);
+        [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
+        unsafe static extern void countBytes(byte* file, int arraySize, Int64* countedBytes);
         //static extern void dllCompress(int a, int b);
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
-        static extern void makeSortedArray(Int64[] array, Int64[] sortedArray, int sortedArraylength);//function rewrites array in -- order without 0
+        [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
+        unsafe static extern void makeSortedArray(Int64* array, Int64* sortedArray, int sortedArraylength);//function rewrites array in -- order without 0
         
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
         unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray);
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_asem.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
         unsafe static extern void codeFile1(/*HuffmanCodeElement[]*/char** huffmanCode, byte* fileArray, byte* codedArray, Int64 fileLength);
 
         //Compress
@@ -70,9 +72,17 @@ namespace JA_Kompresja
             long codedArrayLength=0;
             long[] CBA_copy = new long[256];
 
-
-            //wczytanie pliku i przesłanie do biblioteki
-            countBytes(fileArray, fileArray.Length, countedBytesArray);//pass file's bytes to library by array
+            unsafe
+            {
+                fixed (byte* fileArrayPtr = fileArray)
+                fixed (long* countedBytesArrayPtr = countedBytesArray)
+                {
+                    Debug.Assert(countedBytesArrayPtr != null);
+                    Debug.Assert(fileArrayPtr != null);
+                    //wczytanie pliku i przesłanie do biblioteki
+                    countBytes(fileArrayPtr, fileArray.Length, countedBytesArrayPtr);//pass file's bytes to library by array
+                }
+            }
 
             Console.WriteLine(countedBytesArray.ToString());
 
@@ -86,7 +96,16 @@ namespace JA_Kompresja
             
             Array.Copy(countedBytesArray, CBA_copy, countedBytesArray.Length);      //save data form the array
 
-            makeSortedArray(countedBytesArray, sortedArray, sortedArray.Length);
+            unsafe
+            {
+                fixed (long* countedBytesArrayPtr = countedBytesArray)
+                fixed (long* sortedArrayPtr = sortedArray)
+                {
+                    Debug.Assert(countedBytesArrayPtr != null);
+                    Debug.Assert(sortedArrayPtr != null);
+                    makeSortedArray(countedBytesArrayPtr, sortedArrayPtr, sortedArray.Length);
+                }
+            }
 
             nodes = new TreeNode[notNullBytes*2-1];
 
@@ -101,9 +120,11 @@ namespace JA_Kompresja
                 fixed(long* sortedArrayPtr =  sortedArray) 
                 fixed (TreeNode* pNodes = nodes)
                 {
-
+                    //GC.KeepAlive(nodes);
+                    Debug.Assert(sortedArrayPtr != null);
+                    Debug.Assert(pNodes != null);
                     makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes);
-
+                    
                 }
             }
 
@@ -145,7 +166,8 @@ namespace JA_Kompresja
                     fixed (byte* fileArrayPtr = fileArray)
                     fixed (byte* codedArrayPtr = codedArray)
                     {
-
+                        Debug.Assert(fileArrayPtr != null);
+                        Debug.Assert(codedArrayPtr != null);
                         codeFile1(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
                     }
                 }
@@ -171,16 +193,16 @@ namespace JA_Kompresja
             public Int64 Counter { get; set; }
         }
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
         unsafe static extern long* countBytes(byte* byteTable, int arraySize, long* ptr);
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
         unsafe static extern IntPtr makeSortedArray(Int64* array, int sortedArraylength, ByteCounter* countersArray);
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
         unsafe static extern IntPtr makeHuffmanCodeTree(ByteCounter* sortedInputArray, int sizeOfInputArray, TreeNode* huffmanTree);
 
-        [DllImport(@"..\..\..\..\..\x64\Debug\Huffman_cpp.dll")]
+        [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
         unsafe static extern void codeFile(char** huffmanCode, byte* fileArray, byte* codedArray, long fileLength);
 
         unsafe static extern void decodeFile(TreeNode* treeRoot, byte* fileArray, byte* codedArray, long fileLength);
