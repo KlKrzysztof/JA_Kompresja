@@ -58,11 +58,10 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path) //path, threadsString
         {
-            if (path == null) return null;
+            //if (path == null) return null;
 
             int notNullBytes = 0;
-            int threads = 0;//number of threads to start;
-            byte[] fileArray = File.ReadAllBytes(path); //file readed as bytes 
+            byte[] fileArray = /*{ 12, 10, 8, 8, 10, 15, 11, 10, 12, 8, 1, 12, 13, 2, 2, 5, 12, 15, 1, 7, 8 };*/File.ReadAllBytes(path); //file readed as bytes 
             Int64[] countedBytesArray = new Int64[256];
             Int64[] sortedArray;
             TreeNode[] nodes;
@@ -84,7 +83,7 @@ namespace JA_Kompresja
                 }
             }
 
-            Console.WriteLine(countedBytesArray.ToString());
+            
 
             foreach (Int64 counter in countedBytesArray)
             {
@@ -216,10 +215,10 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path)//paths, threadsString
         {
-            if (path == null) return null;
+            //if (path == null) return null;
 
-            int threads = 0;//number of threads to start;
-            byte[] fileArray = File.ReadAllBytes(path);
+            
+            byte[] fileArray = /*{ 12, 10, 8, 8, 10, 15, 11, 10, 12, 8, 1, 12, 13, 2, 2, 5, 12, 15, 1, 7, 8 };*/File.ReadAllBytes(path);
             byte[] codedArray;
             long codedArrayLength = 0;
             int notNullBytes = 0;

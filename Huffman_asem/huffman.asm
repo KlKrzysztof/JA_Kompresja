@@ -478,7 +478,7 @@ skipSetBit:
     xor     R11, R11                ; Reset bit index
 
 continueCode:
-    inc     RBX                     ; Move to next character in code string
+    add     RBX, 2                     ; Move to next character in code string
     jmp     codeLoop
 
 nextInput:

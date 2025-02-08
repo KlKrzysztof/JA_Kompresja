@@ -230,7 +230,7 @@ namespace JA_Kompresja
 
             List<Tuple<byte[], char[][], long>> compressionResult = [];
             List<Thread> threadList = [];
-            List<byte[]> compressedFile = [];
+            List<byte[]?> compressedFile = [];
             int pathsArrayLength = pathsArray.Length;
 
             sw.Start();
@@ -238,12 +238,13 @@ namespace JA_Kompresja
             {
                 for (int i = 0; i < pathsArrayLength; i++)
                 {
-                    var tempPath = pathsArray[i];
+                    var tempPath = new String(pathsArray[i]);
 
                     Thread t = new(new ThreadStart(() =>
                     {
+                        var localPath = tempPath;
                         var m = new ModelCpp();
-                        var res = m.Compress(tempPath);
+                        var res = m.Compress(localPath);
                         lock (compressionResult)
                         {
                             compressionResult.Add(res);
@@ -320,7 +321,7 @@ namespace JA_Kompresja
                         {
                             fileStream.Write(Encoding.ASCII.GetBytes(pathsArray[0] + "{\n"));
 
-                            fileStream.Write(compressedFile[i]);
+                            fileStream.Write(compressedFile[i]!);
 
                             fileStream.Write(Encoding.ASCII.GetBytes("\n}"));
                         }
@@ -371,7 +372,7 @@ namespace JA_Kompresja
                 }
             }*/
 
-            view.showTime(((double)sw.Elapsed.Milliseconds / 1000.0).ToString());
+            view!.showTime(((double)sw.Elapsed.Milliseconds / 1000.0).ToString());
         }
 
         public static void Decompress(string path, string threadsString, bool cppCheck, bool asmCheck)
