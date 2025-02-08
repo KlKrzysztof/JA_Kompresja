@@ -295,7 +295,7 @@ makeHuffmanCodeTree proc stackPointer: QWORD
     xor RBX, RBX                        ; Clean register
     mov RDI, R8                         ; Keep pointer to output array in RDI
     xor RCX, RCX                        ; Clean register
-	xor R8, R8                          ; Clean register
+	mov R8, R9                          ; move pointers array to R8
 
 ;              main loop
 ;---------------------------------------;
@@ -342,10 +342,10 @@ createNodes:
     pinsrq xmm4, RAX, 1
 
     paddq xmm0, xmm2                    ;calcualte weight of the node
-    sub RSP, 16                         ;make space for write pointers of the orphan node
+    add R8, 16                         ;make space for write pointers of the orphan node
 
-    movdqu [RSP], xmm4                  ;write pointers on stack
-    pinsrq xmm0, RSP, 0                 ;save pointer on orphan nodes pointers
+    movdqu [R8], xmm4                  ;write pointers on stack
+    pinsrq xmm0, R8, 0                 ;save pointer on orphan nodes pointers
 
 ;      write orphan node to array
 ;--------------------------------------;

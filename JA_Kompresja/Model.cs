@@ -44,7 +44,7 @@ namespace JA_Kompresja
         unsafe static extern void makeSortedArray(Int64* array, Int64* sortedArray, int sortedArraylength);//function rewrites array in -- order without 0
         
         [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
-        unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray);
+        unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray, long* pointersArray);
 
         [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
         unsafe static extern void codeFile1(/*HuffmanCodeElement[]*/char** huffmanCode, byte* fileArray, byte* codedArray, Int64 fileLength);
@@ -70,6 +70,7 @@ namespace JA_Kompresja
             byte[] codedArray;
             long codedArrayLength=0;
             long[] CBA_copy = new long[256];
+            long[] pointersArray = null;
 
             unsafe
             {
@@ -113,16 +114,19 @@ namespace JA_Kompresja
                 nodes[i] = new TreeNode();
             }
 
+            pointersArray = new long[notNullBytes*2];
+
             //nodes = new Int64[notNullBytes * 8];
             unsafe
             {
                 fixed(long* sortedArrayPtr =  sortedArray) 
                 fixed (TreeNode* pNodes = nodes)
+                fixed(long* pointersArrayPtr =  pointersArray)
                 {
                     //GC.KeepAlive(nodes);
                     Debug.Assert(sortedArrayPtr != null);
                     Debug.Assert(pNodes != null);
-                    makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes);
+                    makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes, pointersArrayPtr);
                     
                 }
             }
@@ -165,12 +169,11 @@ namespace JA_Kompresja
                     fixed (byte* fileArrayPtr = fileArray)
                     fixed (byte* codedArrayPtr = codedArray)
                     {
-                        Debug.Assert(fileArrayPtr != null);
-                        Debug.Assert(codedArrayPtr != null);
                         codeFile1(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
                     }
                 }
             }
+            //fileArray = null;
 
             return new Tuple<byte[], char[][], long>( codedArray, huffmanCode, fileArray.LongLength);
         }

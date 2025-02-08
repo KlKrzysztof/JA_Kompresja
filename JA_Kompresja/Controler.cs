@@ -20,7 +20,6 @@ namespace JA_Kompresja
     internal static class Controler
     {
         private static appView? view;
-        private static Model?[] models;
 
         private static string timesPath = "Times.csv";
 
@@ -190,8 +189,6 @@ namespace JA_Kompresja
                 threads = 1; //if cannot set default to 1
             }
 
-            models = new Model[threads];
-
             foreach (char c in paths)
             { // count size of the array by counting ';'
                 if (c == ';')
@@ -323,7 +320,7 @@ namespace JA_Kompresja
 
                             fileStream.Write(compressedFile[i]!);
 
-                            fileStream.Write(Encoding.ASCII.GetBytes("\n}"));
+                            fileStream.Write(Encoding.ASCII.GetBytes("\n}\n"));
                         }
                     }
 
@@ -331,48 +328,14 @@ namespace JA_Kompresja
                 }
             }
 
-            /*if (!File.Exists(timesPath))
-            {
-                using (FileStream fs = File.Create(timesPath))
-                {
-                    string lib = "";
-                    string line = "";
-
-                    string time = ((double)sw.Elapsed.Milliseconds / 1000.0).ToString();
-                    time = time.Replace(',', '.');
-
-                    if (cppCheck) lib = "Cpp";
-                    else lib = "Asm";
-
-                    line += lib + "," + threadsString + "," + time + "," + DateTime.Now.ToLongDateString() + "\n";
-
-                    fs.Write(Encoding.ASCII.GetBytes(line));
-
-                    fs.Close();
-                }
-            }
-            else
-            {
-
-                using (FileStream fs = File.Open(timesPath, FileMode.Append))
-                {
-                    string lib = "";
-                    string line = "";
-                    string time = ((double)sw.Elapsed.Milliseconds / 1000.0).ToString();
-                    time = time.Replace(',', '.');
-
-                    if (cppCheck) lib = "Cpp";
-                    else lib = "Asm";
-
-                    line += lib + "," + threadsString + "," + time + "," + DateTime.Now.ToLongDateString() + "\n";
-
-                    fs.Write(Encoding.ASCII.GetBytes(line));
-
-                    fs.Close();
-                }
-            }*/
+            
 
             view!.showTime(((double)sw.Elapsed.Milliseconds / 1000.0).ToString());
+
+            compressionResult = null;
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
+            //GC.Collect();
         }
 
         public static void Decompress(string path, string threadsString, bool cppCheck, bool asmCheck)
