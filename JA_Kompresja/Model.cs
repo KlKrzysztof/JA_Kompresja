@@ -29,7 +29,7 @@ namespace JA_Kompresja
 
         public abstract Tuple<byte[], char[][], long> Compress(string path);
 
-        public abstract byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength);
+        
         
     }
 
@@ -44,10 +44,10 @@ namespace JA_Kompresja
         unsafe static extern void makeSortedArray(Int64* array, Int64* sortedArray, int sortedArraylength);//function rewrites array in -- order without 0
         
         [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
-        unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray, long* pointersArray);
+        unsafe static extern void makeHuffmanCodeTree(Int64* sortedInputArray, int sizeOfInputArray, TreeNode* TreeOutputArray);
 
         [DllImport(@"../../../../../x64/Debug/Huffman_asem.dll")]
-        unsafe static extern void codeFile1(/*HuffmanCodeElement[]*/char** huffmanCode, byte* fileArray, byte* codedArray, Int64 fileLength);
+        unsafe static extern void codeFile(char** huffmanCode, byte* fileArray, byte* codedArray, Int64 fileLength);
 
         //Compress
         //method which starts and menages compression
@@ -58,10 +58,10 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path) //path, threadsString
         {
-            //if (path == null) return null;
+            if (path == null) return null;
 
             int notNullBytes = 0;
-            byte[] fileArray = /*{ 12, 10, 8, 8, 10, 15, 11, 10, 12, 8, 1, 12, 13, 2, 2, 5, 12, 15, 1, 7, 8 };*/File.ReadAllBytes(path); //file readed as bytes 
+            byte[] fileArray = File.ReadAllBytes(path); //file readed as bytes 
             Int64[] countedBytesArray = new Int64[256];
             Int64[] sortedArray;
             TreeNode[] nodes;
@@ -70,7 +70,6 @@ namespace JA_Kompresja
             byte[] codedArray;
             long codedArrayLength=0;
             long[] CBA_copy = new long[256];
-            long[] pointersArray = null;
 
             unsafe
             {
@@ -114,24 +113,20 @@ namespace JA_Kompresja
                 nodes[i] = new TreeNode();
             }
 
-            pointersArray = new long[notNullBytes*2];
-
-            //nodes = new Int64[notNullBytes * 8];
             unsafe
             {
                 fixed(long* sortedArrayPtr =  sortedArray) 
                 fixed (TreeNode* pNodes = nodes)
-                fixed(long* pointersArrayPtr =  pointersArray)
                 {
                     //GC.KeepAlive(nodes);
                     Debug.Assert(sortedArrayPtr != null);
                     Debug.Assert(pNodes != null);
-                    makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes, pointersArrayPtr);
+                    makeHuffmanCodeTree(sortedArrayPtr, sortedArray.Length, pNodes);
                     
                 }
             }
 
-            huffmanCode = new char[256][];//new HuffmanCodeElement[256];
+            huffmanCode = new char[256][];
 
             TreeNodeIterator iter = new TreeNodeIterator(nodes.Last());
 
@@ -142,7 +137,7 @@ namespace JA_Kompresja
                 {
                     nodeByte = iter.Current.NodeByte;
 
-                    huffmanCode[nodeByte] = iter.getCode();//new HuffmanCodeElement(nodeByte, iter.getCode());
+                    huffmanCode[nodeByte] = iter.getCode();
 
                 } while (iter.MoveNext());
             }
@@ -169,20 +164,15 @@ namespace JA_Kompresja
                     fixed (byte* fileArrayPtr = fileArray)
                     fixed (byte* codedArrayPtr = codedArray)
                     {
-                        codeFile1(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
+                        codeFile(pHuffmanCode, fileArrayPtr, codedArrayPtr, fileArray.Length);
                     }
                 }
             }
-            //fileArray = null;
 
             return new Tuple<byte[], char[][], long>( codedArray, huffmanCode, fileArray.LongLength);
         }
 
-        public override byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength)
-        {
-
-            return null;
-        }
+        
     }
     //model class which operate on c++ library
 
@@ -196,18 +186,18 @@ namespace JA_Kompresja
         }
 
         [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
-        unsafe static extern long* countBytes(byte* byteTable, int arraySize, long* ptr);
+        unsafe static extern void countBytes(byte* byteTable, int arraySize, long* ptr);
 
         [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
-        unsafe static extern IntPtr makeSortedArray(Int64* array, int sortedArraylength, ByteCounter* countersArray);
+        unsafe static extern void makeSortedArray(Int64* array, int sortedArraylength, ByteCounter* countersArray);
 
         [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
-        unsafe static extern IntPtr makeHuffmanCodeTree(ByteCounter* sortedInputArray, int sizeOfInputArray, TreeNode* huffmanTree);
+        unsafe static extern void makeHuffmanCodeTree(ByteCounter* sortedInputArray, int sizeOfInputArray, TreeNode* huffmanTree);
 
         [DllImport(@"../../../../../x64/Debug/Huffman_cpp.dll")]
         unsafe static extern void codeFile(char** huffmanCode, byte* fileArray, byte* codedArray, long fileLength);
 
-        unsafe static extern void decodeFile(TreeNode* treeRoot, byte* fileArray, byte* codedArray, long fileLength);
+        //unsafe static extern void decodeFile(TreeNode* treeRoot, byte* fileArray, byte* codedArray, long fileLength);
 
         //Compress
         //method which starts and menages compression
@@ -218,10 +208,10 @@ namespace JA_Kompresja
         //return value: void
         override public Tuple<byte[], char[][], long> Compress(string path)//paths, threadsString
         {
-            //if (path == null) return null;
+            if (path == null) return null;
 
             
-            byte[] fileArray = /*{ 12, 10, 8, 8, 10, 15, 11, 10, 12, 8, 1, 12, 13, 2, 2, 5, 12, 15, 1, 7, 8 };*/File.ReadAllBytes(path);
+            byte[] fileArray = File.ReadAllBytes(path);
             byte[] codedArray;
             long codedArrayLength = 0;
             int notNullBytes = 0;
@@ -229,6 +219,7 @@ namespace JA_Kompresja
             TreeNode[] nodesArray;
             char[][] huffmanCode;
             long[] countedBytes;
+            long[] CBA_copy = new long[256];
 
             unsafe
             {
@@ -249,6 +240,8 @@ namespace JA_Kompresja
                     }
                 }
                 byteCounter = new ByteCounter[notNullBytes];
+
+                Array.Copy(countedBytes, CBA_copy, countedBytes.Length);
 
                 fixed (ByteCounter* byteCounterPtr = byteCounter)
                 {
@@ -284,7 +277,7 @@ namespace JA_Kompresja
             for (int i = 0; i < huffmanCode.Length; i++)
             {
                 if (huffmanCode[i] != null)
-                    codedArrayLength += countedBytes[i] * huffmanCode[i].Length;
+                    codedArrayLength += CBA_copy[i] * huffmanCode[i].Length;
             }
 
             codedArray = new byte[(int)Math.Ceiling(((double)codedArrayLength / 8.0))];
@@ -311,10 +304,6 @@ namespace JA_Kompresja
             
         }
 
-        override public byte[] Decompress(byte[] code, TreeNode[] HuffmanTree, long fileLength)
-        {
-
-            return null;
-        }
+        
     }
 }

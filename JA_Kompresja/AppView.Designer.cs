@@ -28,28 +28,30 @@
         /// </summary>
         private void InitializeComponent()
         {
-            openExplorer = new Button();
-            filePathTextbox = new TextBox();
-            enterPathLabel = new Label();
             threadsLabel = new Label();
+            openExplorer = new Button();
             chooseThreadsNumber = new ComboBox();
+            filePathTextbox = new TextBox();
             cppCheckbox = new CheckBox();
+            enterPathLabel = new Label();
             asmCheckbox = new CheckBox();
-            tabControl = new TabControl();
-            compresionTab = new TabPage();
-            DecompresionStart = new Button();
             compressButton = new Button();
-            StatisticsTab = new TabPage();
-            statisticsPanel = new FlowLayoutPanel();
             label1 = new Label();
-            tabControl.SuspendLayout();
-            compresionTab.SuspendLayout();
-            StatisticsTab.SuspendLayout();
+            label2 = new Label();
             SuspendLayout();
+            // 
+            // threadsLabel
+            // 
+            threadsLabel.AutoSize = true;
+            threadsLabel.Location = new Point(36, 173);
+            threadsLabel.Name = "threadsLabel";
+            threadsLabel.Size = new Size(61, 20);
+            threadsLabel.TabIndex = 3;
+            threadsLabel.Text = "Threads";
             // 
             // openExplorer
             // 
-            openExplorer.Location = new Point(686, 147);
+            openExplorer.Location = new Point(713, 125);
             openExplorer.Margin = new Padding(3, 4, 3, 4);
             openExplorer.Name = "openExplorer";
             openExplorer.Size = new Size(128, 31);
@@ -58,46 +60,28 @@
             openExplorer.UseVisualStyleBackColor = true;
             openExplorer.Click += openExplorerButton_Click;
             // 
+            // chooseThreadsNumber
+            // 
+            chooseThreadsNumber.FormattingEnabled = true;
+            chooseThreadsNumber.Location = new Point(113, 169);
+            chooseThreadsNumber.Margin = new Padding(3, 4, 3, 4);
+            chooseThreadsNumber.Name = "chooseThreadsNumber";
+            chooseThreadsNumber.Size = new Size(87, 28);
+            chooseThreadsNumber.TabIndex = 4;
+            // 
             // filePathTextbox
             // 
-            filePathTextbox.Location = new Point(86, 147);
+            filePathTextbox.Location = new Point(113, 125);
             filePathTextbox.Margin = new Padding(3, 4, 3, 4);
             filePathTextbox.Name = "filePathTextbox";
             filePathTextbox.Size = new Size(593, 27);
             filePathTextbox.TabIndex = 1;
             filePathTextbox.TextChanged += filePathTextbox_TextChanged;
             // 
-            // enterPathLabel
-            // 
-            enterPathLabel.AutoSize = true;
-            enterPathLabel.Location = new Point(9, 151);
-            enterPathLabel.Name = "enterPathLabel";
-            enterPathLabel.Size = new Size(77, 20);
-            enterPathLabel.TabIndex = 2;
-            enterPathLabel.Text = "Enter path";
-            // 
-            // threadsLabel
-            // 
-            threadsLabel.AutoSize = true;
-            threadsLabel.Location = new Point(9, 195);
-            threadsLabel.Name = "threadsLabel";
-            threadsLabel.Size = new Size(61, 20);
-            threadsLabel.TabIndex = 3;
-            threadsLabel.Text = "Threads";
-            // 
-            // chooseThreadsNumber
-            // 
-            chooseThreadsNumber.FormattingEnabled = true;
-            chooseThreadsNumber.Location = new Point(86, 191);
-            chooseThreadsNumber.Margin = new Padding(3, 4, 3, 4);
-            chooseThreadsNumber.Name = "chooseThreadsNumber";
-            chooseThreadsNumber.Size = new Size(87, 28);
-            chooseThreadsNumber.TabIndex = 4;
-            // 
             // cppCheckbox
             // 
             cppCheckbox.AutoSize = true;
-            cppCheckbox.Location = new Point(9, 229);
+            cppCheckbox.Location = new Point(36, 207);
             cppCheckbox.Margin = new Padding(3, 4, 3, 4);
             cppCheckbox.Name = "cppCheckbox";
             cppCheckbox.Size = new Size(109, 24);
@@ -106,10 +90,19 @@
             cppCheckbox.UseVisualStyleBackColor = true;
             cppCheckbox.CheckedChanged += cppCheckbox_CheckedChanged;
             // 
+            // enterPathLabel
+            // 
+            enterPathLabel.AutoSize = true;
+            enterPathLabel.Location = new Point(36, 129);
+            enterPathLabel.Name = "enterPathLabel";
+            enterPathLabel.Size = new Size(77, 20);
+            enterPathLabel.TabIndex = 2;
+            enterPathLabel.Text = "Enter path";
+            // 
             // asmCheckbox
             // 
             asmCheckbox.AutoSize = true;
-            asmCheckbox.Location = new Point(9, 263);
+            asmCheckbox.Location = new Point(36, 241);
             asmCheckbox.Margin = new Padding(3, 4, 3, 4);
             asmCheckbox.Name = "asmCheckbox";
             asmCheckbox.Size = new Size(137, 24);
@@ -118,52 +111,9 @@
             asmCheckbox.UseVisualStyleBackColor = true;
             asmCheckbox.CheckedChanged += asmCheckbox_CheckedChanged;
             // 
-            // tabControl
-            // 
-            tabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            tabControl.Controls.Add(compresionTab);
-            tabControl.Controls.Add(StatisticsTab);
-            tabControl.Location = new Point(0, 0);
-            tabControl.Margin = new Padding(3, 4, 3, 4);
-            tabControl.Name = "tabControl";
-            tabControl.SelectedIndex = 7;
-            tabControl.Size = new Size(922, 608);
-            tabControl.TabIndex = 0;
-            // 
-            // compresionTab
-            // 
-            compresionTab.Controls.Add(label1);
-            compresionTab.Controls.Add(DecompresionStart);
-            compresionTab.Controls.Add(compressButton);
-            compresionTab.Controls.Add(asmCheckbox);
-            compresionTab.Controls.Add(enterPathLabel);
-            compresionTab.Controls.Add(cppCheckbox);
-            compresionTab.Controls.Add(filePathTextbox);
-            compresionTab.Controls.Add(chooseThreadsNumber);
-            compresionTab.Controls.Add(openExplorer);
-            compresionTab.Controls.Add(threadsLabel);
-            compresionTab.Location = new Point(4, 29);
-            compresionTab.Margin = new Padding(3, 4, 3, 4);
-            compresionTab.Name = "compresionTab";
-            compresionTab.Padding = new Padding(3, 4, 3, 4);
-            compresionTab.Size = new Size(914, 575);
-            compresionTab.TabIndex = 1;
-            compresionTab.Text = "Compresion";
-            compresionTab.UseVisualStyleBackColor = true;
-            // 
-            // DecompresionStart
-            // 
-            DecompresionStart.Location = new Point(9, 334);
-            DecompresionStart.Name = "DecompresionStart";
-            DecompresionStart.Size = new Size(164, 29);
-            DecompresionStart.TabIndex = 8;
-            DecompresionStart.Text = "Start Decompresion";
-            DecompresionStart.UseVisualStyleBackColor = true;
-            DecompresionStart.Click += DecompresionStart_Click;
-            // 
             // compressButton
             // 
-            compressButton.Location = new Point(9, 296);
+            compressButton.Location = new Point(36, 274);
             compressButton.Margin = new Padding(3, 4, 3, 4);
             compressButton.Name = "compressButton";
             compressButton.Size = new Size(164, 31);
@@ -172,70 +122,60 @@
             compressButton.UseVisualStyleBackColor = true;
             compressButton.Click += compressButton_Click;
             // 
-            // StatisticsTab
-            // 
-            StatisticsTab.Controls.Add(statisticsPanel);
-            StatisticsTab.Location = new Point(4, 29);
-            StatisticsTab.Margin = new Padding(3, 4, 3, 4);
-            StatisticsTab.Name = "StatisticsTab";
-            StatisticsTab.Padding = new Padding(3, 4, 3, 4);
-            StatisticsTab.Size = new Size(914, 575);
-            StatisticsTab.TabIndex = 0;
-            StatisticsTab.Text = "Statistics";
-            StatisticsTab.UseVisualStyleBackColor = true;
-            // 
-            // statisticsPanel
-            // 
-            statisticsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            statisticsPanel.Location = new Point(0, 0);
-            statisticsPanel.Margin = new Padding(3, 4, 3, 4);
-            statisticsPanel.Name = "statisticsPanel";
-            statisticsPanel.Size = new Size(913, 567);
-            statisticsPanel.TabIndex = 0;
-            // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(637, 253);
+            label1.Location = new Point(656, 177);
             label1.Name = "label1";
-            label1.Size = new Size(50, 20);
+            label1.Size = new Size(13, 20);
             label1.TabIndex = 9;
-            label1.Text = "label1";
+            label1.Text = " ";
             label1.Click += label1_Click;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(571, 177);
+            label2.Name = "label2";
+            label2.Size = new Size(45, 20);
+            label2.TabIndex = 10;
+            label2.Text = "Time:";
             // 
             // appView
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(914, 600);
-            Controls.Add(tabControl);
+            ClientSize = new Size(882, 453);
+            Controls.Add(label2);
+            Controls.Add(label1);
+            Controls.Add(filePathTextbox);
+            Controls.Add(compressButton);
+            Controls.Add(threadsLabel);
+            Controls.Add(asmCheckbox);
+            Controls.Add(openExplorer);
+            Controls.Add(enterPathLabel);
+            Controls.Add(chooseThreadsNumber);
+            Controls.Add(cppCheckbox);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Margin = new Padding(3, 4, 3, 4);
             Name = "appView";
             Text = "Huffman Compresion";
             Load += appView_Load;
-            tabControl.ResumeLayout(false);
-            compresionTab.ResumeLayout(false);
-            compresionTab.PerformLayout();
-            StatisticsTab.ResumeLayout(false);
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
-        private Button openExplorer;
-        private TextBox filePathTextbox;
-        private Label enterPathLabel;
         private Label threadsLabel;
+        private Button openExplorer;
         private ComboBox chooseThreadsNumber;
+        private TextBox filePathTextbox;
         private CheckBox cppCheckbox;
+        private Label enterPathLabel;
         private CheckBox asmCheckbox;
-        private TabControl tabControl;
-        private TabPage StatisticsTab;
-        private TabPage compresionTab;
-        private FlowLayoutPanel statisticsPanel;
         private Button compressButton;
-        private Button DecompresionStart;
         private Label label1;
+        private Label label2;
     }
 }

@@ -130,22 +130,6 @@ namespace JA_Kompresja
             }
         }
 
-        //addStatistics
-        //add new time to the statistics display
-        //
-        //enter params:
-        //item - new data added to display
-        //SplitContainer with nested SplitContainer with Labels
-        //
-        //return value: void
-        public void addStatistics(SplitContainer item)
-        {
-            if (item != null)
-            {
-                this.statisticsPanel.Controls.Add(item);
-            }
-        }
-
         //compressButton_Click
         //method which pack settings and pass it to controler then it call Controler to start compression
         //
@@ -166,10 +150,7 @@ namespace JA_Kompresja
 
         }
 
-        private void DecompresionStart_Click(object sender, EventArgs e)
-        {
-            Controler.Decompress(filePathTextbox.Text, chooseThreadsNumber.SelectedText, cppCheckbox.Checked, asmCheckbox.Checked);
-        }
+        
 
         private void label1_Click(object sender, EventArgs e)
         {

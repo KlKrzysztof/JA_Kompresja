@@ -2,4 +2,4 @@ LIBRARY Huffman_asem
 EXPORTS countBytes
 EXPORTS makeSortedArray
 EXPORTS makeHuffmanCodeTree
-EXPORTS codeFile1
+EXPORTS codeFile

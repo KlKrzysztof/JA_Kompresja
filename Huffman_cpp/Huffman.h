@@ -72,13 +72,17 @@ extern "C" __declspec(dllexport) HUFFMAN_CPP void countBytes(uint8_t* byteTable,
 //      long long byte;
 //      long long counter;
 //  };
+// 
+// Algorithm rewrites array to duble ended queue and sorts the array. Null elements are cut off
 //
+//################## WARNING - procedure destroyes input array ##################
 extern "C" __declspec(dllexport) void makeSortedArray(long long* array, long long sortedArraylength, ByteCounter* countersArray) {
     std::deque<ByteCounter> byteTab = std::deque<ByteCounter>(256); //queue for easy deleting null values 
 
     //fill the table with bytes and counters
     for (int i = 0; i < 256; ++i) {
         byteTab[i] = ByteCounter(i, array[i]);
+        array[i] = 0;
     }
 
     std::stable_sort(byteTab.begin(), byteTab.end());   //sort the array by stable algorythm
